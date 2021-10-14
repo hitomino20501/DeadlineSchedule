@@ -12,10 +12,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
-simple Slave{
-	parameters:
-		volatile double delayTime @unit(s);
-	gates:
-	    input in;
-	    output out;
+simple Slave
+{
+    parameters:
+        volatile double delayTime @unit(s);
+        @display("i=block/process_white");
+    gates:
+        input in;
+        output out;
 }

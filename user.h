@@ -9,6 +9,7 @@
 #define USER_H_
 
 struct User{
+    std::string name;
     int priority;
 };
 

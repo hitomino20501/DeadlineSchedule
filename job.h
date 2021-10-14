@@ -10,11 +10,14 @@
 
 struct Job{
     struct User user;
-    int totalFrame = 20;
+    int jobIndex = 0;
+    int totalFrame = 5;
     int renderingFrame = 0;
     int errorFrame = 0;
     int finishFrame = 0;
     int weight = 0;
+    bool isJobFinish = false;
+    std::string jobColor;
     omnetpp::simtime_t startTime = 0;
     omnetpp::simtime_t finisdTime = 0;
 };

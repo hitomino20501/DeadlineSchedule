@@ -7,10 +7,15 @@
 using namespace omnetpp;
 
 class Slave : public cSimpleModule{
-  protected:
+    private:
+        struct Job job;
+        bool renderColor = false;
+        std::string jobColor;
+    protected:
     // The following redefined virtual function holds the algorithm.
-    virtual void initialize() override;
-    virtual void handleMessage(cMessage *msg) override;
+        virtual void initialize() override;
+        virtual void handleMessage(cMessage *msg) override;
+        virtual void refreshDisplay() const override;
 };
 
 Define_Module(Slave);
@@ -24,24 +29,46 @@ void Slave::initialize(){
 
 void Slave::handleMessage(cMessage *msg){
     if(msg->isSelfMessage()){
+        EV<<"Slave got a message from itself: "<<simTime()<<"\n";
         // 處理自己的message
-        send(msg, "out");
+        int msgKind = msg->getKind();
+        if(msgKind==WorkerState::Dispatch_JOB){
+            EV<<"Slave render finish: "<<simTime()<<"\n";
+            msg->setKind(WorkerState::FRAME_SUCCEEDED);
+            renderColor = false;
+            send(msg, "out");
+        }else{
+            EV<<"Slave request a job: "<<simTime()<<"\n";
+            send(msg, "out");
+        }
     }
     else{
         // 處理來自server的message
-        EV<<"worker log: get a msg\n";
+        EV<<"Slave got a message(job) from database: "<<simTime()<<"\n";
+        // Log
         Dispatch *dispatchJob = check_and_cast<Dispatch *>(msg);
+        job = dispatchJob->getJob();
+        jobColor = job.jobColor;
+        EV<<"Job info:\n";
+        EV<<"  jobIndex:"<<job.jobIndex<<"\n";
+        EV<<"  renderingFrame:"<<job.renderingFrame<<"\n";
+        EV<<"  finishFrame:"<<job.finishFrame<<"\n";
+        EV<<"  weight:"<<job.weight<<"\n";
+        EV<<"Slave start rendering: "<<simTime()<<"\n";
 
-        int msgKind = dispatchJob->getKind();
-        if(msgKind==WorkerState::Dispatch_JOB){
-            EV<<"worker log kind:"<<msgKind<<"\n";
-            struct Job job = dispatchJob->getJob();
-            EV<<"worker log weight:"<<job.weight<<"\n";
-            // 設定render時間
-            simtime_t renderTime = round(par("delayTime"));
-            // 完成render 發送訊息給server
-            dispatchJob->setKind(WorkerState::FRAME_SUCCEEDED);
-            scheduleAt(simTime()+renderTime, dispatchJob);
-        }
+        // 設定render時間
+        // 完成render 發送訊息給server
+        renderColor = true;
+        simtime_t renderTime = round(par("delayTime"));
+        scheduleAt(simTime()+renderTime, msg);
+    }
+}
+
+void Slave::refreshDisplay() const{
+    if(renderColor){
+        auto c_string = jobColor.c_str();
+        getDisplayString().setTagArg("i", 1, c_string);
+    }else{
+        getDisplayString().setTagArg("i", 1, "snow");
     }
 }
