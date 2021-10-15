@@ -18,13 +18,16 @@ class Database : public cSimpleModule{
         std::queue<int> destQueue;
         std::queue<std::string> colorQueue;
         struct Job job;
-        int PW = 10;
+        int PW = 1;
         int EW = 0;
         int SW = 0;
         int RB = 0;
         int RW = -1;
+        int queueableJob;
         Job findDispatchJob(std::vector<Job> *jobVector);
         void generateColor(std::queue<std::string> *colorQueue);
+        bool isQueueHasJob();
+        bool isOverTotalFrame(Job *job);
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -34,17 +37,21 @@ class Database : public cSimpleModule{
 Define_Module(Database);
 
 void Database::initialize(){
-    jobVector.reserve(totalUser * eachUserJob);
+    queueableJob = totalUser * eachUserJob;
+    jobVector.reserve(queueableJob);
+
     generateColor(&colorQueue);
 
     // 新增User Job
     // User userList[totalUser] = {{"A",10}, {"B",20}, {"C",30}, {"D",40}};
+    int pr[4]={20, 15, 11, 10};
     User userList[totalUser];
     int userPriority = 10;
     for(int i=0;i<totalUser;i++){
-        userList[i].name = colorQueue.front();
-        userList[i].priority = userPriority;
-        userPriority = userPriority+5;
+        userList[i].name = "User"+std::to_string(i);
+        userList[i].priority = pr[i];
+        //userList[i].priority = userPriority;
+        //userPriority = userPriority+5;
     }
 
     int jobIndex = 0;
@@ -116,19 +123,24 @@ void Database::handleMessage(cMessage *msg){
             // 檢查job是否完成
             if(job.finishFrame==job.totalFrame){
                 job.isJobFinish = true;
+                queueableJob--;
             }
             jobVector.at(jobIndex) = job;
 
-            job = findDispatchJob(&jobVector);
-            job.renderingFrame = job.renderingFrame + 1;
-            job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
-            jobVector.at(job.jobIndex) = job;
+            if(isQueueHasJob()){
+                job = findDispatchJob(&jobVector);
+                if(!isOverTotalFrame(&job)){
+                    job.renderingFrame = job.renderingFrame + 1;
+                    job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
+                    jobVector.at(job.jobIndex) = job;
 
-            // 新增一個Dispatch訊息
-            Dispatch *dispatchJob = new Dispatch("dispatchJob");
-            dispatchJob->setKind(WorkerState::Dispatch_JOB);
-            dispatchJob->setJob(job);
-            scheduleAt(simTime()+0.5, dispatchJob);
+                    // 新增一個Dispatch訊息
+                    Dispatch *dispatchJob = new Dispatch("dispatchJob");
+                    dispatchJob->setKind(WorkerState::Dispatch_JOB);
+                    dispatchJob->setJob(job);
+                    scheduleAt(simTime()+0.5, dispatchJob);
+                }
+            }
         }
     }
 
@@ -140,7 +152,10 @@ Job Database::findDispatchJob(std::vector<Job> *jobVector){
     int maxIndex = 0;
     for (auto it = jobVector->begin(); it != jobVector->end(); ++it){
         if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame!=(*it).totalFrame)){
-            if((*it).weight > max){
+            // 當vector中有一樣weight時
+            // >表示對index越前面的越有利
+            // >=表示對index越後面的越有利
+            if((*it).weight >= max){
                 max = (*it).weight;
                 maxIndex = index;
             }
@@ -149,6 +164,20 @@ Job Database::findDispatchJob(std::vector<Job> *jobVector){
     }
     //EV<<"maxIndex:"<<maxIndex<<"\n";
     return jobVector->at(maxIndex);
+}
+
+bool Database::isQueueHasJob(){
+    if(queueableJob>0){
+        return true;
+    }
+    return false;
+}
+
+bool Database::isOverTotalFrame(Job *job){
+    if(job->finishFrame+job->renderingFrame==job->totalFrame){
+        return true;
+    }
+    return false;
 }
 
 void Database::generateColor(std::queue<std::string> *colorQueue){

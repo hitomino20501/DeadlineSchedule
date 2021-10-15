@@ -15,9 +15,9 @@
 network Farm{
 	submodules:
 	    database:Database;
-	    slave[3]:Slave;
+	    slave[17]:Slave;
 	connections:
-	    for i=0..2{
+	    for i=0..16{
 	    	database.out[i] --> {  delay = 100ms; } --> slave[i].in;
 	    	database.in[i] <-- {  delay = 100ms; } <-- slave[i].out;
 	    }

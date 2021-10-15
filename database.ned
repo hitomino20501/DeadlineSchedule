@@ -14,6 +14,6 @@
 //
 simple Database{
 	gates:
-	    input in[3];
-	    output out[3];
+	    input in[17];
+	    output out[17];
 }

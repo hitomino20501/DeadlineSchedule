@@ -11,6 +11,7 @@ class Slave : public cSimpleModule{
         struct Job job;
         bool renderColor = false;
         std::string jobColor;
+        std::string userName;
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -49,8 +50,10 @@ void Slave::handleMessage(cMessage *msg){
         Dispatch *dispatchJob = check_and_cast<Dispatch *>(msg);
         job = dispatchJob->getJob();
         jobColor = job.jobColor;
+        userName = job.user.name;
         EV<<"Job info:\n";
         EV<<"  jobIndex:"<<job.jobIndex<<"\n";
+        EV<<"  userName:"<<job.user.name<<"\n";
         EV<<"  renderingFrame:"<<job.renderingFrame<<"\n";
         EV<<"  finishFrame:"<<job.finishFrame<<"\n";
         EV<<"  weight:"<<job.weight<<"\n";
@@ -66,8 +69,11 @@ void Slave::handleMessage(cMessage *msg){
 
 void Slave::refreshDisplay() const{
     if(renderColor){
-        auto c_string = jobColor.c_str();
-        getDisplayString().setTagArg("i", 1, c_string);
+        auto c_jobColor = jobColor.c_str();
+        getDisplayString().setTagArg("i", 1, c_jobColor);
+        getDisplayString().setTagArg("i", 2, 70);
+        auto c_userName = userName.c_str();
+        getDisplayString().setTagArg("t", 0, c_userName);
     }else{
         getDisplayString().setTagArg("i", 1, "snow");
     }
