@@ -15,6 +15,7 @@ using namespace omnetpp;
 class Database : public cSimpleModule{
     private:
         std::vector<Job> jobVector;
+        std::vector<Job> balancedVector;
         std::queue<int> destQueue;
         std::queue<std::string> colorQueue;
         struct Job job;
@@ -38,6 +39,7 @@ Define_Module(Database);
 
 void Database::initialize(){
     jobVector.reserve(50);
+    balancedVector.reserve(50);
     // 以下省略 改用workstation送出工作
     /*queueableJob = totalUser * eachUserJob;
     jobVector.reserve(queueableJob);
@@ -160,6 +162,13 @@ void Database::handleMessage(cMessage *msg){
 
 }
 
+/* 排程邏輯 Weighted, Balanced
+ * Weighted:A weighted system that takes priority, submission time, number of
+ * rendering tasks, and number of job errors into account, but does
+ * not take pools into account.
+ * Balanced: Job order will be balanced so that each job has the same
+ * number of Workers rendering them at a time.
+ * */
 Job Database::findDispatchJob(std::vector<Job> *jobVector){
     int index = 0;
     int max = 0;
@@ -170,12 +179,38 @@ Job Database::findDispatchJob(std::vector<Job> *jobVector){
             // 當vector中有一樣weight時
             // >表示對index越前面的越有利
             // >=表示對index越後面的越有利
-            if((*it).weight >= max){
+            if((*it).weight > max){
                 max = (*it).weight;
                 maxIndex = index;
             }
         }
         index++;
+    }
+
+    // balance 當weight一樣 把slave分配給render數量低的job
+    for (auto it = jobVector->begin(); it != jobVector->end(); ++it){
+        if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame!=(*it).totalFrame)){
+            if((*it).weight == max){
+                balancedVector.push_back(*it);
+            }
+        }
+    }
+
+    if(!balancedVector.empty()){
+        EV<<"Invoke balanced:\n";
+        int minRender = -1;
+        for (auto it = balancedVector.begin(); it != balancedVector.end(); ++it){
+            if(minRender==-1){
+                minRender = (*it).renderingFrame;
+                maxIndex = (*it).jobIndex;
+            }else{
+                if((*it).renderingFrame<minRender){
+                    minRender = (*it).renderingFrame;
+                    maxIndex = (*it).jobIndex;
+                }
+            }
+        }
+        balancedVector.clear();
     }
     //EV<<"maxIndex:"<<maxIndex<<"\n";
     return jobVector->at(maxIndex);

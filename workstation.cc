@@ -33,7 +33,7 @@ Define_Module(Workstation);
 
 void Workstation::initialize(){
     // ²£¥Í4­Óuser
-    int pr[4]={20, 15, 11, 10};
+    int pr[4]={10, 11, 15, 20};
     //int userPriority = 10;
     User userList[totalUser];
     for(int i=0;i<totalUser;i++){
