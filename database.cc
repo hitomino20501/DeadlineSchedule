@@ -23,7 +23,7 @@ class Database : public cSimpleModule{
         int SW = 0;
         int RB = 0;
         int RW = -1;
-        int queueableJob;
+        int queueableJob = 0;
         Job findDispatchJob(std::vector<Job> *jobVector);
         void generateColor(std::queue<std::string> *colorQueue);
         bool isQueueHasJob();
@@ -37,7 +37,9 @@ class Database : public cSimpleModule{
 Define_Module(Database);
 
 void Database::initialize(){
-    queueableJob = totalUser * eachUserJob;
+    jobVector.reserve(50);
+    // 以下省略 改用workstation送出工作
+    /*queueableJob = totalUser * eachUserJob;
     jobVector.reserve(queueableJob);
 
     generateColor(&colorQueue);
@@ -67,7 +69,7 @@ void Database::initialize(){
         EV<<"color: "<<colorQueue.front()<<"\n";
         colorQueue.push(colorQueue.front());
         colorQueue.pop();
-    }
+    }*/
 }
 
 void Database::handleMessage(cMessage *msg){
@@ -82,36 +84,42 @@ void Database::handleMessage(cMessage *msg){
         send(msg, "out", destQueue.front());
         destQueue.pop();
     }else{
-        // 處理自worker的訊息
-        int dest = msg->getArrivalGate()->getIndex();
-        EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
-        EV<<"Processing the request: "<<simTime()<<"\n";
-
-        destQueue.push(dest);
-
+        // 處理自worker/workstation的訊息
         int msgKind = msg->getKind();
+        int dest = msg->getArrivalGate()->getIndex();
         if(msgKind==WorkerState::REQUEST_JOB){
+            EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
             EV<<"Message type: REQUEST_JOB\n";
+            destQueue.push(dest);
             // 刪除自worker的cMessage訊息
             delete msg;
 
-            // 取出vector中weight最大的job
-            job = findDispatchJob(&jobVector);
-            // 更新job狀態
-            job.renderingFrame = job.renderingFrame + 1;
-            job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
-            jobVector.at(job.jobIndex) = job;
+            if(isQueueHasJob()){
+                // 取出vector中weight最大的job
+                job = findDispatchJob(&jobVector);
+                // 更新job狀態
+                job.renderingFrame = job.renderingFrame + 1;
+                job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
+                jobVector.at(job.jobIndex) = job;
 
-            // 新增一個Dispatch訊息
-            Dispatch *dispatchJob = new Dispatch("dispatchJob");
-            dispatchJob->setKind(WorkerState::Dispatch_JOB);
-            dispatchJob->setJob(job);
-            // 模擬處理請求時間
-            scheduleAt(simTime()+0.5, dispatchJob);
+                // 新增一個Dispatch訊息
+                Dispatch *dispatchJob = new Dispatch("dispatchJob");
+                dispatchJob->setKind(WorkerState::Dispatch_JOB);
+                dispatchJob->setJob(job);
+                // 模擬處理請求時間
+                scheduleAt(simTime()+0.5, dispatchJob);
+            }else{
+                Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                scheduleAt(simTime()+0.5, noDispatchJob);
+            }
+            //TODO:isQueueHasNoJob 回傳
         }
         else if(msgKind==WorkerState::FRAME_SUCCEEDED){
+            EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
             // 取得jobIndex 更新vector中job狀態
             EV<<"Message type: FRAME_SUCCEEDED\n";
+            destQueue.push(dest);
             Dispatch *receiveJob = check_and_cast<Dispatch *>(msg);
             int jobIndex = receiveJob->getJob().jobIndex;
             delete receiveJob;
@@ -141,6 +149,12 @@ void Database::handleMessage(cMessage *msg){
                     scheduleAt(simTime()+0.5, dispatchJob);
                 }
             }
+        }else if(msgKind==WorkerState::SUBMIT_JOB){
+            EV<<"Database receive a message from workstation: "<<simTime()<<"\n";
+            EV<<"Message type: SUBMIT_JOB\n";
+            Dispatch *submitJob = check_and_cast<Dispatch *>(msg);
+            jobVector.push_back(submitJob->getJob());
+            queueableJob++;
         }
     }
 
@@ -152,6 +166,7 @@ Job Database::findDispatchJob(std::vector<Job> *jobVector){
     int maxIndex = 0;
     for (auto it = jobVector->begin(); it != jobVector->end(); ++it){
         if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame!=(*it).totalFrame)){
+            // TODO:加入balance
             // 當vector中有一樣weight時
             // >表示對index越前面的越有利
             // >=表示對index越後面的越有利

@@ -16,6 +16,8 @@ enum WorkerState{
    FRAME_ERROR = 4,
    REQUEST_JOB = 5,
    Dispatch_JOB = 6,
+   SUBMIT_JOB = 7,
+   NO_Dispatch_JOB = 8,
 };
 
 #endif /* STATE_H_ */

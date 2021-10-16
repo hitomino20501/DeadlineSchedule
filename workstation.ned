@@ -12,10 +12,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
-simple Database{
+simple Workstation
+{
     parameters:
-        @display("i=block/process;is=l");
-	gates:
-	    input in[18];
-	    output out[18];
+    	@display("i=block/workstation");
+    gates:
+        input in;
+        output out;
 }
