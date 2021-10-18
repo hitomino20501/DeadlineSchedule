@@ -25,6 +25,7 @@ class Database : public cSimpleModule{
         int RB = 0;
         int RW = -1;
         int queueableJob = 0;
+        int logFlag = 0;
         Job findDispatchJob(std::vector<Job> *jobVector);
         void generateColor(std::queue<std::string> *colorQueue);
         bool isQueueHasJob();
@@ -33,6 +34,7 @@ class Database : public cSimpleModule{
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
         virtual void handleMessage(cMessage *msg) override;
+        virtual void finish() override;
 };
 
 Define_Module(Database);
@@ -40,6 +42,10 @@ Define_Module(Database);
 void Database::initialize(){
     jobVector.reserve(50);
     balancedVector.reserve(50);
+    Dispatch *msg = new Dispatch("log");
+    msg->setKind(WorkerState::LOG_TIMER);
+    msg->setSchedulingPriority(10);
+    scheduleAt(1.5, msg);
     // 以下省略 改用workstation送出工作
     /*queueableJob = totalUser * eachUserJob;
     jobVector.reserve(queueableJob);
@@ -75,19 +81,43 @@ void Database::initialize(){
 }
 
 void Database::handleMessage(cMessage *msg){
+    int msgKind = msg->getKind();
     if(msg->isSelfMessage()){
-        EV<<"Database receive a message from itself"<<simTime()<<"\n";
-        EV<<"Finished the request: "<<simTime()<<"\n";
-        /*EV<<"Dispatch job info:\n";
-        EV<<"  user: "<<job.user.name<<"\n";
-        EV<<"  priority: "<<job.user.priority<<"\n";
-        EV<<"  jobIndex:"<<job.jobIndex<<"\n";
-        EV<<"  weight:"<<job.weight<<"\n";*/
-        send(msg, "out", destQueue.front());
-        destQueue.pop();
+        if(msgKind==WorkerState::LOG_TIMER){
+            int renderingFrameZero = 0;
+            for (auto it = jobVector.begin(); it != jobVector.end(); ++it){
+                EV<<"{";
+                EV<<"'simTime':"<<simTime()<<",";
+                EV<<"'userName':'"<<(*it).user.name<<"',";
+                EV<<"'renderingFrame':"<<(*it).renderingFrame<<",";
+                EV<<"'weight':"<<(*it).weight;
+                EV<<"}\n";
+                if((*it).renderingFrame==0){
+                    renderingFrameZero++;
+                }
+            }
+            if(renderingFrameZero==jobVector.size()){
+                logFlag++;
+            }
+            if(logFlag<4){
+                scheduleAt(simTime()+1.0, msg);
+            }else{
+                cancelAndDelete(msg);
+            }
+
+        }else{
+            EV<<"Database receive a message from itself"<<simTime()<<"\n";
+            EV<<"Finished the request: "<<simTime()<<"\n";
+            /*EV<<"Dispatch job info:\n";
+            EV<<"  user: "<<job.user.name<<"\n";
+            EV<<"  priority: "<<job.user.priority<<"\n";
+            EV<<"  jobIndex:"<<job.jobIndex<<"\n";
+            EV<<"  weight:"<<job.weight<<"\n";*/
+            send(msg, "out", destQueue.front());
+            destQueue.pop();
+        }
     }else{
         // 處理自worker/workstation的訊息
-        int msgKind = msg->getKind();
         int dest = msg->getArrivalGate()->getIndex();
         if(msgKind==WorkerState::REQUEST_JOB){
             EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
@@ -162,6 +192,11 @@ void Database::handleMessage(cMessage *msg){
 
 }
 
+void Database::finish() {
+    jobVector.clear();
+    balancedVector.clear();
+}
+
 /* 排程邏輯 Weighted, Balanced
  * Weighted:A weighted system that takes priority, submission time, number of
  * rendering tasks, and number of job errors into account, but does
@@ -197,7 +232,7 @@ Job Database::findDispatchJob(std::vector<Job> *jobVector){
     }
 
     if(!balancedVector.empty()){
-        EV<<"Invoke balanced:\n";
+        //EV<<"Invoke balanced:\n";
         int minRender = -1;
         for (auto it = balancedVector.begin(); it != balancedVector.end(); ++it){
             if(minRender==-1){

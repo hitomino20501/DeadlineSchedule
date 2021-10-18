@@ -56,12 +56,12 @@ void Slave::handleMessage(cMessage *msg){
             job = dispatchJob->getJob();
             jobColor = job.jobColor;
             userName = job.user.name;
-            EV<<"Job info:\n";
+            /*EV<<"Job info:\n";
             EV<<"  jobIndex:"<<job.jobIndex<<"\n";
             EV<<"  userName:"<<job.user.name<<"\n";
             EV<<"  renderingFrame:"<<job.renderingFrame<<"\n";
             EV<<"  finishFrame:"<<job.finishFrame<<"\n";
-            EV<<"  weight:"<<job.weight<<"\n";
+            EV<<"  weight:"<<job.weight<<"\n";*/
             EV<<"Slave start rendering: "<<simTime()<<"\n";
 
             // 設定render時間
