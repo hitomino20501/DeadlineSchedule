@@ -1,6 +1,8 @@
 #include <string.h>
 #include <omnetpp.h>
 #include <queue>
+#include <random>
+#include <algorithm>
 #include "user.h"
 #include "job.h"
 #include "state.h"
@@ -34,7 +36,8 @@ Define_Module(Workstation);
 void Workstation::initialize(){
     generateColor();
 
-    // 產生4個user
+    // 手動產生user job
+    /*// 產生4個user
     int pr[totalUser]={15, 11, 10, 20};
     //int userPriority = 10;
     User userList[totalUser];
@@ -45,10 +48,42 @@ void Workstation::initialize(){
         //userPriority = userPriority+5;
     }
 
-    generateJob(userList[0]);
+    //generateJob(userList[0]);
     //generateJob(userList[1]);
     //generateJob(userList[2]);
-    //generateJob(userList[3]);
+    //generateJob(userList[3]);*/
+
+    // 實驗環境:設定X台slave Y個user同時執行的時候剛好拿滿X台
+    int priorityGroup[3]={25, 20, 11};
+    std::vector<User> userVector;
+    userVector.reserve(16);
+    User user;
+    for(int i=0;i<16;i++){
+        if(i<6){
+            user.name = "User"+std::to_string(i);
+            user.priority = priorityGroup[0];
+            userVector.push_back(user);
+        }
+        else if(i>=6 && i<11){
+            user.name = "User"+std::to_string(i);
+            user.priority = priorityGroup[1];
+            userVector.push_back(user);
+        }
+        else{
+            user.name = "User"+std::to_string(i);
+            user.priority = priorityGroup[2];
+            userVector.push_back(user);
+        }
+    }
+
+    std::random_shuffle(userVector.begin(), userVector.end());
+
+    for (auto it = userVector.begin(); it != userVector.end(); ++it){
+        EV<<(*it).name<<":"<<(*it).priority<<"\n";
+        generateJob(*it);
+    }
+
+    userVector.clear();
 
     Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::SUBMIT_JOB);

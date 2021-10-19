@@ -41,8 +41,8 @@ class Database : public cSimpleModule{
 Define_Module(Database);
 
 void Database::initialize(){
-    jobVector.reserve(50);
-    balancedVector.reserve(50);
+    jobVector.reserve(100);
+    balancedVector.reserve(100);
     Dispatch *msg = new Dispatch("log");
     msg->setKind(WorkerState::LOG_TIMER);
     msg->setSchedulingPriority(10);
@@ -101,7 +101,7 @@ void Database::handleMessage(cMessage *msg){
                 logFlag++;
             }
             if(logFlag<4){
-                scheduleAt(simTime()+1.0, msg);
+                scheduleAt(simTime()+5.0, msg);
             }else{
                 cancelAndDelete(msg);
             }
@@ -224,10 +224,10 @@ void Database::refreshDisplay() const{
  * */
 Job Database::findDispatchJob(std::vector<Job> *jobVector){
     int index = 0;
-    int max = 0;
+    int max = -1000;
     int maxIndex = 0;
     for (auto it = jobVector->begin(); it != jobVector->end(); ++it){
-        if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame!=(*it).totalFrame)){
+        if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame<(*it).totalFrame)){
             // TODO:加入balance
             // 當vector中有一樣weight時
             // >表示對index越前面的越有利
