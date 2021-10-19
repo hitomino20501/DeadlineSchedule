@@ -35,6 +35,7 @@ class Database : public cSimpleModule{
         virtual void initialize() override;
         virtual void handleMessage(cMessage *msg) override;
         virtual void finish() override;
+        virtual void refreshDisplay() const override;
 };
 
 Define_Module(Database);
@@ -207,6 +208,11 @@ void Database::handleMessage(cMessage *msg){
 void Database::finish() {
     jobVector.clear();
     balancedVector.clear();
+}
+
+void Database::refreshDisplay() const{
+    cCanvas *canvas = getSystemModule()->getCanvas();
+    canvas->setAnimationSpeed(1.5, this);
 }
 
 /* ±Æµ{ÅÞ¿è Weighted, Balanced
