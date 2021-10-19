@@ -129,23 +129,35 @@ void Database::handleMessage(cMessage *msg){
             if(isQueueHasJob()){
                 // 取出vector中weight最大的job
                 job = findDispatchJob(&jobVector);
-                // 更新job狀態
-                job.renderingFrame = job.renderingFrame + 1;
-                job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
-                jobVector.at(job.jobIndex) = job;
+                if(!isOverTotalFrame(&job)){
+                    // 更新job狀態
+                    job.renderingFrame = job.renderingFrame + 1;
+                    job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
+                    jobVector.at(job.jobIndex) = job;
 
-                // 新增一個Dispatch訊息
-                Dispatch *dispatchJob = new Dispatch("dispatchJob");
-                dispatchJob->setKind(WorkerState::Dispatch_JOB);
-                dispatchJob->setJob(job);
-                // 模擬處理請求時間
-                scheduleAt(simTime()+0.5, dispatchJob);
+                    // 新增一個Dispatch訊息
+                    Dispatch *dispatchJob = new Dispatch("dispatchJob");
+                    dispatchJob->setKind(WorkerState::Dispatch_JOB);
+                    dispatchJob->setJob(job);
+                    // 模擬處理請求時間
+                    scheduleAt(simTime()+0.5, dispatchJob);
+                }else{
+                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                    scheduleAt(simTime()+0.5, noDispatchJob);
+                }
             }else{
-                Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
-                noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                scheduleAt(simTime()+0.5, noDispatchJob);
+                if(logFlag<4){
+                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                    scheduleAt(simTime()+0.5, noDispatchJob);
+                }else{
+                    // 關掉slave
+                    Dispatch *shutDown = new Dispatch("shutDown");
+                    shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
+                    scheduleAt(simTime()+0.5, shutDown);
+                }
             }
-            //TODO:isQueueHasNoJob 回傳
         }
         else if(msgKind==WorkerState::FRAME_SUCCEEDED){
             EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";

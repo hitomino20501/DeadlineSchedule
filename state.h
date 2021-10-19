@@ -19,6 +19,7 @@ enum WorkerState{
    SUBMIT_JOB = 7,
    NO_Dispatch_JOB = 8,
    LOG_TIMER = 9,
+   SHUT_DOWN_SLAVE = 10,
 };
 
 #endif /* STATE_H_ */

@@ -5,7 +5,7 @@
 #include "job.h"
 #include "state.h"
 #include "dispatch_m.h"
-#define totalUser 4
+#define totalUser 5
 #define eachUserJob 1
 
 using namespace omnetpp;
@@ -32,8 +32,10 @@ class Workstation : public cSimpleModule{
 Define_Module(Workstation);
 
 void Workstation::initialize(){
+    generateColor();
+
     // 產生4個user
-    int pr[4]={10, 11, 15, 20};
+    int pr[totalUser]={15, 11, 10, 20};
     //int userPriority = 10;
     User userList[totalUser];
     for(int i=0;i<totalUser;i++){
@@ -43,12 +45,10 @@ void Workstation::initialize(){
         //userPriority = userPriority+5;
     }
 
-    generateColor();
-
     generateJob(userList[0]);
-    generateJob(userList[1]);
-    generateJob(userList[2]);
-    generateJob(userList[3]);
+    //generateJob(userList[1]);
+    //generateJob(userList[2]);
+    //generateJob(userList[3]);
 
     Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::SUBMIT_JOB);
@@ -85,11 +85,23 @@ void Workstation::handleMessage(cMessage *msg){
             send(submitJob, "out");
         }
         if(!jobQueue.empty()){
-            msg->setSchedulingPriority(10);
+            msg->setSchedulingPriority(1);
             scheduleAt(simTime()+1.0, msg);
         }else{
             cancelAndDelete(msg);
         }
+        // 延遲最後一個工作
+        /*if(!jobQueue.empty()){
+            if(jobQueue.size()==1){
+                msg->setSchedulingPriority(1);
+                scheduleAt(simTime()+15.0, msg);
+            }else{
+                msg->setSchedulingPriority(1);
+                scheduleAt(simTime()+1.0, msg);
+            }
+        }else{
+            cancelAndDelete(msg);
+        }*/
     }
 }
 

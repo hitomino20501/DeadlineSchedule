@@ -69,9 +69,12 @@ void Slave::handleMessage(cMessage *msg){
             renderColor = true;
             simtime_t renderTime = round(par("delayTime"));
             scheduleAt(simTime()+renderTime, msg);
-        }else{
+        }else if(msgKind==WorkerState::NO_Dispatch_JOB){
             EV<<"Database no pending job: "<<simTime()<<"\n";
             scheduleAt(simTime()+0.5, msg);
+        }else{
+            EV<<"Shut down slave: "<<simTime()<<"\n";
+            cancelAndDelete(msg);
         }
     }
 }
