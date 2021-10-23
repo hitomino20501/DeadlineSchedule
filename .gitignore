@@ -1,0 +1,13 @@
+/.settings
+/out
+/results
+/logs
+.cproject
+.oppbuildspec
+.project
+.qtenvrc
+dispatch_m.cc
+dispatch_m.h
+Makefile
+schedule1.exe
+.gitattributes
