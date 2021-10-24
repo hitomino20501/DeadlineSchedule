@@ -11,3 +11,5 @@ dispatch_m.h
 Makefile
 schedule1.exe
 .gitattributes
+submit_m.cc
+submit_m.h

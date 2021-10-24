@@ -7,22 +7,22 @@
 #include "job.h"
 #include "state.h"
 #include "dispatch_m.h"
+#include "submit_m.h"
 #define totalUser 4
-#define eachUserJob 1
+#define eachUserJob 3
 
 using namespace omnetpp;
 
 class Workstation : public cSimpleModule{
     private:
-        std::queue<Job> jobQueue;
+        std::queue<std::vector<Job>> jobQueue;
         std::queue<std::string> colorQueue;
-        struct Job job;
+        std::vector<User> userVector;
         int PW = 1;
         int EW = 0;
         int SW = 0;
         int RB = 0;
         int RW = -1;
-        int jobIndex = 0;
         void generateColor();
         //void generateJob(User &user);
     protected:
@@ -35,6 +35,39 @@ Define_Module(Workstation);
 
 void Workstation::initialize(){
     generateColor();
+
+    struct Job job;
+    struct User user;
+    userVector.reserve(totalUser);
+    int pr[totalUser]={10, 15, 11, 20};
+    int userIndex = 0;
+    for(int i=0;i<totalUser;i++){
+        user.name = "User"+std::to_string(i);
+        user.priority = pr[i];
+        user.userIndex = userIndex;
+        user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
+        user.userColor = colorQueue.front();
+        userVector.push_back(user);
+        userIndex++;
+        colorQueue.push(colorQueue.front());
+        colorQueue.pop();
+    }
+
+    std::vector<Job> temJob;
+
+    int jobIndex = 0;
+    for(int i=0;i<totalUser;i++){
+        for(int j=0;j<eachUserJob;j++){
+            job.user = &userVector[i];
+            job.jobIndex = jobIndex;
+            jobIndex++;
+            temJob.push_back(job);
+            userVector[i].totalJob = userVector[i].totalJob+1;
+        }
+        jobQueue.push(temJob);
+        jobIndex = 0;
+        temJob.clear();
+    }
 
     // 手動產生user job
     // 產生4個user
@@ -85,9 +118,9 @@ void Workstation::initialize(){
 
     userVector.clear();*/
 
-    /*Dispatch *msg = new Dispatch("hello");
+    Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::SUBMIT_JOB);
-    scheduleAt(1.0, msg);*/
+    scheduleAt(1.0, msg);
 
     // 產生job
     /*int jobIndex = 0;
@@ -111,13 +144,21 @@ void Workstation::handleMessage(cMessage *msg){
         int msgKind = msg->getKind();
         if(msgKind==WorkerState::SUBMIT_JOB){
             EV<<"Workstation submit a job: "<<simTime()<<"\n";
-            job = jobQueue.front();
+            struct Workflow workflow;
+            workflow.userJobs = jobQueue.front();
+            jobQueue.pop();
+            Submit *submitJob = new Submit("submitJob");
+            submitJob->setKind(WorkerState::SUBMIT_JOB);
+            submitJob->setSchedulingPriority(1);
+            submitJob->setWorkflow(workflow);
+            send(submitJob, "out");
+            /*job = jobQueue.front();
             jobQueue.pop();
             Dispatch *submitJob = new Dispatch("submitJob");
             submitJob->setKind(WorkerState::SUBMIT_JOB);
             msg->setSchedulingPriority(1);
             submitJob->setJob(job);
-            send(submitJob, "out");
+            send(submitJob, "out");*/
         }
         if(!jobQueue.empty()){
             msg->setSchedulingPriority(1);
