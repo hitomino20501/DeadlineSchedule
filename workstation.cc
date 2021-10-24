@@ -7,7 +7,7 @@
 #include "job.h"
 #include "state.h"
 #include "dispatch_m.h"
-#define totalUser 5
+#define totalUser 4
 #define eachUserJob 1
 
 using namespace omnetpp;
@@ -24,7 +24,7 @@ class Workstation : public cSimpleModule{
         int RW = -1;
         int jobIndex = 0;
         void generateColor();
-        void generateJob(User &user);
+        //void generateJob(User &user);
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -37,8 +37,8 @@ void Workstation::initialize(){
     generateColor();
 
     // 手動產生user job
-    /*// 產生4個user
-    int pr[totalUser]={15, 11, 10, 20};
+    // 產生4個user
+    /*int pr[totalUser]={15, 11, 10, 20};
     //int userPriority = 10;
     User userList[totalUser];
     for(int i=0;i<totalUser;i++){
@@ -48,13 +48,13 @@ void Workstation::initialize(){
         //userPriority = userPriority+5;
     }
 
-    //generateJob(userList[0]);
-    //generateJob(userList[1]);
-    //generateJob(userList[2]);
-    //generateJob(userList[3]);*/
+    generateJob(userList[0]);
+    generateJob(userList[1]);
+    generateJob(userList[2]);
+    generateJob(userList[3]);*/
 
     // 實驗環境:設定X台slave Y個user同時執行的時候剛好拿滿X台
-    int priorityGroup[3]={25, 20, 11};
+    /*int priorityGroup[3]={25, 20, 11};
     std::vector<User> userVector;
     userVector.reserve(16);
     User user;
@@ -83,11 +83,11 @@ void Workstation::initialize(){
         generateJob(*it);
     }
 
-    userVector.clear();
+    userVector.clear();*/
 
-    Dispatch *msg = new Dispatch("hello");
+    /*Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::SUBMIT_JOB);
-    scheduleAt(1.0, msg);
+    scheduleAt(1.0, msg);*/
 
     // 產生job
     /*int jobIndex = 0;
@@ -140,7 +140,7 @@ void Workstation::handleMessage(cMessage *msg){
     }
 }
 
-void Workstation::generateJob(User &user){
+/*void Workstation::generateJob(User &user){
     job.user = user;
     job.jobIndex = jobIndex;
     job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
@@ -149,7 +149,7 @@ void Workstation::generateJob(User &user){
     jobIndex++;
     colorQueue.push(colorQueue.front());
     colorQueue.pop();
-}
+}*/
 
 void Workstation::generateColor(){
     colorQueue.push("darkorange");

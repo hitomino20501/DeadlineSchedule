@@ -10,7 +10,7 @@ class Slave : public cSimpleModule{
     private:
         struct Job job;
         bool renderColor = false;
-        std::string jobColor;
+        std::string userColor;
         std::string userName;
     protected:
     // The following redefined virtual function holds the algorithm.
@@ -54,8 +54,8 @@ void Slave::handleMessage(cMessage *msg){
             // Log
             Dispatch *dispatchJob = check_and_cast<Dispatch *>(msg);
             job = dispatchJob->getJob();
-            jobColor = job.jobColor;
-            userName = job.user.name;
+            userColor = job.user->userColor;
+            userName = job.user->name;
             /*EV<<"Job info:\n";
             EV<<"  jobIndex:"<<job.jobIndex<<"\n";
             EV<<"  userName:"<<job.user.name<<"\n";
@@ -81,7 +81,7 @@ void Slave::handleMessage(cMessage *msg){
 
 void Slave::refreshDisplay() const{
     if(renderColor){
-        auto c_jobColor = jobColor.c_str();
+        auto c_jobColor = userColor.c_str();
         getDisplayString().setTagArg("i", 1, c_jobColor);
         getDisplayString().setTagArg("i", 2, 70);
         auto c_userName = userName.c_str();

@@ -9,14 +9,15 @@
 #define JOB_H_
 
 struct Job{
-    struct User user;
+    struct User* user;
     int jobIndex = 0;
-    int totalFrame = 500;
+    int totalFrame = 10;
     int renderingFrame = 0;
     int errorFrame = 0;
     int finishFrame = 0;
     int weight = 0;
     bool isJobFinish = false;
+    bool isActivate = false;
     std::string jobColor;
     omnetpp::simtime_t startTime = 0;
     omnetpp::simtime_t finisdTime = 0;

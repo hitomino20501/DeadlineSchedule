@@ -16,6 +16,6 @@ simple Database{
     parameters:
         @display("i=block/process;is=l");
 	gates:
-	    input in[151];
-	    output out[151];
+	    input in[18];
+	    output out[18];
 }
