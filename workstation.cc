@@ -7,7 +7,7 @@
 #include "job.h"
 #include "state.h"
 #include "dispatch_m.h"
-#include "submit_m.h"
+#include "generate_job.h"
 #define totalUser 4
 #define eachUserJob 3
 
@@ -15,15 +15,16 @@ using namespace omnetpp;
 
 class Workstation : public cSimpleModule{
     private:
-        std::queue<std::vector<Job>> jobQueue;
-        std::queue<std::string> colorQueue;
-        std::vector<User> userVector;
-        int PW = 1;
+        //std::queue<std::vector<Job>> jobQueue;
+        //std::queue<std::string> colorQueue;
+        std::vector<User>& userVector = GenerateJob::getInstance().getAllUser();
+        /*int PW = 1;
         int EW = 0;
         int SW = 0;
         int RB = 0;
-        int RW = -1;
-        void generateColor();
+        int RW = -1;*/
+        int countUser = 0;
+        //void generateColor();
         //void generateJob(User &user);
     protected:
     // The following redefined virtual function holds the algorithm.
@@ -34,7 +35,8 @@ class Workstation : public cSimpleModule{
 Define_Module(Workstation);
 
 void Workstation::initialize(){
-    generateColor();
+    // 改成singleton模式
+    /*generateColor();
 
     struct Job job;
     struct User user;
@@ -67,7 +69,7 @@ void Workstation::initialize(){
         jobQueue.push(temJob);
         jobIndex = 0;
         temJob.clear();
-    }
+    }*/
 
     // 手動產生user job
     // 產生4個user
@@ -144,14 +146,36 @@ void Workstation::handleMessage(cMessage *msg){
         int msgKind = msg->getKind();
         if(msgKind==WorkerState::SUBMIT_JOB){
             EV<<"Workstation submit a job: "<<simTime()<<"\n";
-            struct Workflow workflow;
+            /*struct Workflow workflow;
+            workflow.user = &userVector[countUser];
+            Submit *submitJob = new Submit("submitJob");
+            submitJob->setKind(WorkerState::SUBMIT_JOB);
+            submitJob->setSchedulingPriority(1);
+            submitJob->setWorkflow(workflow);
+            send(submitJob, "out");
+            countUser++;*/
+            Dispatch *submitJob = new Dispatch("submitJob");
+            submitJob->setKind(WorkerState::SUBMIT_JOB);
+            submitJob->setSchedulingPriority(1);
+            send(submitJob, "out");
+            countUser++;
+            /*for (auto it = userVector.begin(); it != userVector.end(); ++it){
+                EV<<"{";
+                EV<<"'simTime':"<<simTime()<<",";
+                EV<<"'userName':'"<<(*it).name<<"',";
+                EV<<"'renderingFrame':"<<(*it).userRenderingFrame<<",";
+                EV<<"'weight':"<<(*it).userWeight<<",";
+                EV<<"'total':"<<(*it).userFinishFrame;
+                EV<<"}\n";
+            }*/
+            /*struct Workflow workflow;
             workflow.userJobs = jobQueue.front();
             jobQueue.pop();
             Submit *submitJob = new Submit("submitJob");
             submitJob->setKind(WorkerState::SUBMIT_JOB);
             submitJob->setSchedulingPriority(1);
             submitJob->setWorkflow(workflow);
-            send(submitJob, "out");
+            send(submitJob, "out");*/
             /*job = jobQueue.front();
             jobQueue.pop();
             Dispatch *submitJob = new Dispatch("submitJob");
@@ -160,12 +184,18 @@ void Workstation::handleMessage(cMessage *msg){
             submitJob->setJob(job);
             send(submitJob, "out");*/
         }
-        if(!jobQueue.empty()){
+        if(countUser<userVector.size()){
             msg->setSchedulingPriority(1);
             scheduleAt(simTime()+1.0, msg);
         }else{
             cancelAndDelete(msg);
         }
+        /*if(!jobQueue.empty()){
+            msg->setSchedulingPriority(1);
+            scheduleAt(simTime()+1.0, msg);
+        }else{
+            cancelAndDelete(msg);
+        }*/
         // 延遲最後一個工作
         /*if(!jobQueue.empty()){
             if(jobQueue.size()==1){
@@ -192,7 +222,7 @@ void Workstation::handleMessage(cMessage *msg){
     colorQueue.pop();
 }*/
 
-void Workstation::generateColor(){
+/*void Workstation::generateColor(){
     colorQueue.push("darkorange");
     colorQueue.push("magenta");
     colorQueue.push("lightskyblue");
@@ -223,4 +253,4 @@ void Workstation::generateColor(){
     colorQueue.push("orange");
     colorQueue.push("navy");
     colorQueue.push("indigo");
-}
+}*/

@@ -1,0 +1,37 @@
+/*
+ * generate_job.h
+ *
+ *  Created on: 2021¦~10¤ë25¤é
+ *      Author: FoSky
+ */
+
+#ifndef GENERATE_JOB_H_
+#define GENERATE_JOB_H_
+#include <omnetpp.h>
+#include <queue>
+#include <vector>
+#include "user.h"
+#include "job.h"
+
+class GenerateJob{
+public:
+    static GenerateJob& getInstance();
+    std::vector<User>& getAllUser();
+    std::vector<std::vector<Job>>& getAllJob();
+    void clearVector();
+    //std::vector<std::vector<int>>& getUserWorkflow();
+private:
+    std::queue<std::vector<Job>> jobQueue;
+    std::queue<std::string> colorQueue;
+    std::vector<User> userVector;
+    std::vector<std::vector<Job>> jobVector;
+    int PW = 1;
+    int EW = 0;
+    int SW = 0;
+    int RB = 0;
+    int RW = -1;
+    GenerateJob();
+    void generateColor();
+};
+
+#endif /* GENERATE_JOB_H_ */

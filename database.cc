@@ -7,7 +7,7 @@
 #include "job.h"
 #include "state.h"
 #include "dispatch_m.h"
-#include "submit_m.h"
+#include "generate_job.h"
 #define totalUser 4
 #define eachUserJob 3
 
@@ -15,18 +15,21 @@ using namespace omnetpp;
 
 class Database : public cSimpleModule{
     private:
-        std::vector<std::vector<Job>> jobVector;
+        std::vector<std::vector<Job>>& jobVector = GenerateJob::getInstance().getAllJob();
         std::vector<User> balancedVector;
         std::queue<int> destQueue;
         std::queue<std::string> colorQueue;
-        std::vector<User> userVector;
+        //std::vector<User> userVector;
+        std::vector<User>& userVector = GenerateJob::getInstance().getAllUser();
         int PW = 1;
         int EW = 0;
         int SW = 0;
         int RB = 0;
         int RW = -1;
-        int queueableJob = 0;
+        int queueableJob = 0;//要改
+        //int queueableJob = totalUser * eachUserJob;
         int logFlag = 0;
+        int limitSearchUser = 0;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
         void generateColor(std::queue<std::string> *colorQueue);
@@ -128,7 +131,11 @@ void Database::handleMessage(cMessage *msg){
         if(msgKind==WorkerState::LOG_TIMER){
             //EV<<"just print\n";
             int renderingFrameZero = 0;
+            int index = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
+                if(index==limitSearchUser){
+                    break;
+                }
                 EV<<"{";
                 EV<<"'simTime':"<<simTime()<<",";
                 EV<<"'userName':'"<<(*it).name<<"',";
@@ -139,6 +146,7 @@ void Database::handleMessage(cMessage *msg){
                 if((*it).userRenderingFrame==0){
                     renderingFrameZero++;
                 }
+                index++;
             }
             if(renderingFrameZero==userVector.size()){
                 logFlag++;
@@ -240,11 +248,19 @@ void Database::handleMessage(cMessage *msg){
         }else if(msgKind==WorkerState::SUBMIT_JOB){
             EV<<"Database receive a message from workstation: "<<simTime()<<"\n";
             EV<<"Message type: SUBMIT_JOB\n";
-            Submit *submitJob = check_and_cast<Submit *>(msg);
+            /*Submit *submitJob = check_and_cast<Submit *>(msg);
+            userVector.push_back(*(submitJob->getWorkflow().user));
+            queueableJob = queueableJob + jobVector[limitSearchUser].size();
+            limitSearchUser++;
+            delete submitJob;*/
+            queueableJob = queueableJob + jobVector[limitSearchUser].size();
+            limitSearchUser++;
+            delete msg;
+            /*Submit *submitJob = check_and_cast<Submit *>(msg);
             jobVector.push_back(submitJob->getWorkflow().userJobs);
             queueableJob = queueableJob + submitJob->getWorkflow().userJobs.size();
             userVector.push_back(*(submitJob->getWorkflow().userJobs[0].user));
-            delete submitJob;
+            delete submitJob;*/
             /*Dispatch *submitJob = check_and_cast<Dispatch *>(msg);
             jobVector.push_back(submitJob->getJob());
             queueableJob++;*/
@@ -254,7 +270,8 @@ void Database::handleMessage(cMessage *msg){
 }
 
 void Database::finish() {
-    jobVector.clear();
+    //jobVector.clear();
+    GenerateJob::getInstance().clearVector();
     balancedVector.clear();
 }
 
@@ -271,11 +288,13 @@ void Database::refreshDisplay() const{
  * number of Workers rendering them at a time.
  * */
 User& Database::findDispatchUser(){
-    EV<<"findDispatchUser1";
     int index = 0;
     int max = -1000;
     int maxIndex = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
+        if(index==limitSearchUser){
+            break;
+        }
         if(!isAllJobFinisd((*it).userIndex)){
             EV<<"Weight: "<<(*it).userWeight<<"\n";
             if((*it).userWeight > max){
@@ -287,12 +306,17 @@ User& Database::findDispatchUser(){
     }
 
     // balance 當weight一樣 把slave分配給render數量低的user
+    index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
+        if(index==limitSearchUser){
+            break;
+        }
         if(!isAllJobFinisd((*it).userIndex)){
             if((*it).userWeight == max){
                 balancedVector.push_back(*it);
             }
         }
+        index++;
     }
 
     if(!balancedVector.empty()){
@@ -318,16 +342,12 @@ User& Database::findDispatchUser(){
 Job* Database::findDispatchJob(User *user){
     // TODO:後面加入workFlow
     int index = 0;
-    //EV<<"findDispatchJob: "<<(*user).userIndex<<"\n";
     for (auto it = jobVector[(*user).userIndex].begin(); it != jobVector[(*user).userIndex].end(); ++it){
-        //EV<<"findDispatchJob2:\n";
         if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame<(*it).totalFrame)){
-            //EV<<"findDispatchJob3:\n";
             index = (*it).jobIndex;
             return &(jobVector[(*user).userIndex].at(index));
         }
     }
-    //EV<<"findDispatchJob4: "<<index<<"\n";
 
     return nullptr;
 }
@@ -368,11 +388,9 @@ bool Database::isOverTotalFrame(Job *job){
 }
 
 bool Database::isAllJobFinisd(int userIndex){
-    EV<<"isAllJobFinisd1";
     for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
         if(!(*it).isJobFinish){
             if((*it).finishFrame+(*it).renderingFrame<(*it).totalFrame){
-                EV<<"isAllJobFinisd2";
                 return false;
             }
         }
