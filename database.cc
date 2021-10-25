@@ -152,7 +152,7 @@ void Database::handleMessage(cMessage *msg){
                 logFlag++;
             }
             if(logFlag<4){
-                scheduleAt(simTime()+1.0, msg);
+                scheduleAt(simTime()+5.0, msg);
             }else{
                 cancelAndDelete(msg);
             }
@@ -296,7 +296,7 @@ User& Database::findDispatchUser(){
             break;
         }
         if(!isAllJobFinisd((*it).userIndex)){
-            EV<<"Weight: "<<(*it).userWeight<<"\n";
+            //EV<<"Weight: "<<(*it).userWeight<<"\n";
             if((*it).userWeight > max){
                 max = (*it).userWeight;
                 maxIndex = (*it).userIndex;

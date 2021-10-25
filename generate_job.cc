@@ -8,6 +8,7 @@
 #define totalUser 4
 #define eachUserJob 3
 
+using namespace omnetpp;
 
 GenerateJob::GenerateJob(){
     generateColor();
@@ -15,7 +16,55 @@ GenerateJob::GenerateJob(){
     struct Job job;
     struct User user;
     userVector.reserve(totalUser);
-    int pr[totalUser]={10, 15, 11, 20};
+
+    // 實驗環境1 150slave 16user 20eachUserJob 25task
+    /*int priorityGroup[3]={25, 20, 11};
+    int userIndex = 0;
+    for(int i=0;i<totalUser;i++){
+        if(i<6){
+            user.name = "User"+std::to_string(i);
+            user.priority = priorityGroup[0];
+            user.userIndex = userIndex;
+            user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
+            user.userColor = colorQueue.front();
+            userVector.push_back(user);
+            userIndex++;
+            colorQueue.push(colorQueue.front());
+            colorQueue.pop();
+        }
+        else if(i>=6 && i<11){
+            user.name = "User"+std::to_string(i);
+            user.priority = priorityGroup[1];
+            user.userIndex = userIndex;
+            user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
+            user.userColor = colorQueue.front();
+            userVector.push_back(user);
+            userIndex++;
+            colorQueue.push(colorQueue.front());
+            colorQueue.pop();
+        }
+        else{
+            user.name = "User"+std::to_string(i);
+            user.priority = priorityGroup[2];
+            user.userIndex = userIndex;
+            user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
+            user.userColor = colorQueue.front();
+            userVector.push_back(user);
+            userIndex++;
+            colorQueue.push(colorQueue.front());
+            colorQueue.pop();
+        }
+    }
+
+    std::random_shuffle(userVector.begin(), userVector.end());
+    userIndex = 0;
+    for (auto it = userVector.begin(); it != userVector.end(); ++it){
+        (*it).userIndex = userIndex;
+        userIndex++;
+    }*/
+
+    // 實驗環境2 17slave 4user 3eachUserJob 25task
+    int pr[totalUser]={20, 15, 11, 10};
     int userIndex = 0;
     for(int i=0;i<totalUser;i++){
         user.name = "User"+std::to_string(i);
@@ -29,14 +78,13 @@ GenerateJob::GenerateJob(){
         colorQueue.pop();
     }
 
-    //std::random_shuffle(userVector.begin(), userVector.end());
-
     std::vector<Job> temJob;
     temJob.reserve(eachUserJob);
-    jobVector.reserve(100);
+    jobVector.reserve(totalUser*eachUserJob);
 
     int jobIndex = 0;
     for(int i=0;i<totalUser;i++){
+        EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
         for(int j=0;j<eachUserJob;j++){
             job.user = &userVector[i];
             job.jobIndex = jobIndex;

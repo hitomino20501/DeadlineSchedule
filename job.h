@@ -11,7 +11,7 @@
 struct Job{
     struct User* user;
     int jobIndex = 0;
-    int totalFrame = 10;
+    int totalFrame = 25;
     int renderingFrame = 0;
     int errorFrame = 0;
     int finishFrame = 0;
