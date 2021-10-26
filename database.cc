@@ -357,6 +357,11 @@ void Database::dispatchJob(User* user, Job* job){
     if(!job->isActivate){
         user->renderingJob = user->renderingJob + 1;
         job->isActivate = true;
+        if(user->userIndex==0){
+            cMessage *drawNode = new cMessage("drawNode");
+            cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
+            sendDirect(drawNode, node, "in", 0);
+        }
     }
     user->userRenderingFrame = user->userRenderingFrame+1;
     user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);

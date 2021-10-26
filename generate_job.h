@@ -18,13 +18,18 @@ public:
     static GenerateJob& getInstance();
     std::vector<User>& getAllUser();
     std::vector<std::vector<Job>>& getAllJob();
+    std::vector<int>& getHierarchy();
+    std::vector<std::vector<int>>& getWorkflowHierarchy();
+    std::vector<std::vector<int>>& getUserWorkflow();
     void clearVector();
-    //std::vector<std::vector<int>>& getUserWorkflow();
 private:
     std::queue<std::vector<Job>> jobQueue;
     std::queue<std::string> colorQueue;
     std::vector<User> userVector;
     std::vector<std::vector<Job>> jobVector;
+    std::vector<int> hierarchy;
+    std::vector<std::vector<int>> workflowHierarchy;
+    std::vector<std::vector<int>> adj;
     int PW = 1;
     int EW = 0;
     int SW = 0;

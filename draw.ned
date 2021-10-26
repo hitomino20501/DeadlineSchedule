@@ -12,26 +12,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
-// database.ned slave°}¦C ³£­n§ï
-network Farm{
-	submodules:
-	    database:Database{
-    		@display("p=325,50");
-		}
-	    slave[17]:Slave{
-    		@display("p=100,150,m,10,50,50");
-		}
-	    workstation:Workstation{
-    		@display("p=200,50");
-		}
-		draw:Draw{
-			@display("p=750,50");
-		}
-	connections:
-	    for i=0..16{
-	    	database.out[i] --> {  delay = 100ms; } --> slave[i].in;
-	    	database.in[i] <-- {  delay = 100ms; } <-- slave[i].out;
-	    }
-	    database.out[17] --> {  delay = 100ms; } --> workstation.in;
-	    database.in[17] <-- {  delay = 100ms; } <-- workstation.out;
+simple Draw
+{
+    @display("i=block/network2");
+    gates:
+        input in[];
+        output out[];
 }
