@@ -3,6 +3,7 @@
 #include <queue>
 #include <vector>
 #include <sstream>
+#include <numeric>
 #include "user.h"
 #include "job.h"
 #include "state.h"
@@ -21,6 +22,7 @@ class Database : public cSimpleModule{
         std::queue<std::string> colorQueue;
         //std::vector<User> userVector;
         std::vector<User>& userVector = GenerateJob::getInstance().getAllUser();
+        std::vector<std::vector<int>>& adj = GenerateJob::getInstance().getUserWorkflow();
         int PW = 1;
         int EW = 0;
         int SW = 0;
@@ -341,11 +343,33 @@ User& Database::findDispatchUser(){
 
 Job* Database::findDispatchJob(User *user){
     // TODO:後面加入workFlow
-    int index = 0;
+    /*int index = 0;
     for (auto it = jobVector[(*user).userIndex].begin(); it != jobVector[(*user).userIndex].end(); ++it){
         if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame<(*it).totalFrame)){
             index = (*it).jobIndex;
             return &(jobVector[(*user).userIndex].at(index));
+        }
+    }*/
+    for(int i=0;i<adj.size();i++){
+        int checkDependency = 0;
+        int dependencyJob = accumulate(adj[i].begin(), adj[i].end(), 0);
+        if(dependencyJob==0){
+            if(jobVector[(*user).userIndex][i].finishFrame+jobVector[(*user).userIndex][i].renderingFrame<jobVector[(*user).userIndex][i].totalFrame){
+                return &(jobVector[(*user).userIndex].at(i));
+            }
+        }else{
+            for(int j=0;j<adj[i].size();j++){
+                if(adj[i][j]==1){
+                    if(jobVector[(*user).userIndex][j].isJobFinish){
+                        checkDependency++;
+                    }
+                }
+            }
+            if(checkDependency==dependencyJob){
+                if(jobVector[(*user).userIndex][i].finishFrame+jobVector[(*user).userIndex][i].renderingFrame<jobVector[(*user).userIndex][i].totalFrame){
+                    return &(jobVector[(*user).userIndex].at(i));
+                }
+            }
         }
     }
 
@@ -354,6 +378,8 @@ Job* Database::findDispatchJob(User *user){
 
 void Database::dispatchJob(User* user, Job* job){
     // 更新user狀態
+    EV<<"GATUSERINDEX: "<<user->userIndex<<"\n";
+    EV<<"GATJOBINDEX: "<<job->jobIndex<<"\n";
     if(!job->isActivate){
         user->renderingJob = user->renderingJob + 1;
         job->isActivate = true;
@@ -393,10 +419,34 @@ bool Database::isOverTotalFrame(Job *job){
 }
 
 bool Database::isAllJobFinisd(int userIndex){
-    for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
+    /*for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
         if(!(*it).isJobFinish){
             if((*it).finishFrame+(*it).renderingFrame<(*it).totalFrame){
                 return false;
+            }
+        }
+    }*/
+    // 從workFlow搜尋
+    //TODO:為每個人建立一個fowkFlow
+    for(int i=0;i<adj.size();i++){
+        int checkDependency = 0;
+        int dependencyJob = accumulate(adj[i].begin(), adj[i].end(), 0);
+        if(dependencyJob==0){
+            if(jobVector[userIndex][i].finishFrame+jobVector[userIndex][i].renderingFrame<jobVector[userIndex][i].totalFrame){
+                return false;
+            }
+        }else{
+            for(int j=0;j<adj[i].size();j++){
+                if(adj[i][j]==1){
+                    if(jobVector[userIndex][j].isJobFinish){
+                        checkDependency++;
+                    }
+                }
+            }
+            if(checkDependency==dependencyJob){
+                if(jobVector[userIndex][i].finishFrame+jobVector[userIndex][i].renderingFrame<jobVector[userIndex][i].totalFrame){
+                    return false;
+                }
             }
         }
     }
