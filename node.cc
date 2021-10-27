@@ -2,6 +2,7 @@
 #include <omnetpp.h>
 #include "user.h"
 #include "job.h"
+#include "state.h"
 #include "generate_job.h"
 
 using namespace omnetpp;
@@ -10,6 +11,7 @@ class Node : public cSimpleModule{
     private:
         std::vector<std::vector<Job>>& jobVector = GenerateJob::getInstance().getAllJob();
         bool renderColor = false;
+        bool finishColor = false;
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -37,8 +39,14 @@ void Node::handleMessage(cMessage *msg){
         }
         scheduleAt(simTime()+3.0, msg);
     }else{
-        EV<<"Node got a message\n";
-        renderColor = true;
+        //EV<<"Node got a message\n";
+        int msgKind = msg->getKind();
+        if(msgKind==WorkerState::JOB_START){
+            renderColor = true;
+        }else if(msgKind==WorkerState::JOB_FINISH){
+            renderColor = false;
+            finishColor = true;
+        }
         delete(msg);
     }
 
@@ -46,9 +54,10 @@ void Node::handleMessage(cMessage *msg){
 
 void Node::refreshDisplay() const{
     if(renderColor){
+        getDisplayString().setTagArg("i", 1, "orange");
+        getDisplayString().setTagArg("i", 2, 50);
+    }else if(finishColor){
         getDisplayString().setTagArg("i", 1, "green");
-        getDisplayString().setTagArg("i", 2, 70);
-    }else{
-        getDisplayString().setTagArg("i", 1, "snow");
+        getDisplayString().setTagArg("i", 2, 50);
     }
 }

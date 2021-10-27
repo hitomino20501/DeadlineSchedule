@@ -237,6 +237,12 @@ void Database::handleMessage(cMessage *msg){
                 job->isActivate = false;
                 user->renderingJob = user->renderingJob - 1;
                 queueableJob--;
+                if(user->userIndex==0){
+                    cMessage *drawNode = new cMessage("drawNode");
+                    drawNode->setKind(WorkerState::JOB_FINISH);
+                    cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
+                    sendDirect(drawNode, node, "in", 0);
+                }
             }
 
             // 再從queue中選擇一個合適的工作
@@ -378,13 +384,14 @@ Job* Database::findDispatchJob(User *user){
 
 void Database::dispatchJob(User* user, Job* job){
     // 更新user狀態
-    EV<<"GATUSERINDEX: "<<user->userIndex<<"\n";
-    EV<<"GATJOBINDEX: "<<job->jobIndex<<"\n";
+    //EV<<"GATUSERINDEX: "<<user->userIndex<<"\n";
+    //EV<<"GATJOBINDEX: "<<job->jobIndex<<"\n";
     if(!job->isActivate){
         user->renderingJob = user->renderingJob + 1;
         job->isActivate = true;
         if(user->userIndex==0){
             cMessage *drawNode = new cMessage("drawNode");
+            drawNode->setKind(WorkerState::JOB_START);
             cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
             sendDirect(drawNode, node, "in", 0);
         }
