@@ -65,10 +65,12 @@ GenerateJob::GenerateJob(){
 
     // 實驗環境2 17slave 4user 3eachUserJob 25task
     int pr[totalUser]={20, 15, 11, 10};
+    int pro[totalUser]={10, 5, 1, 1};
     int userIndex = 0;
     for(int i=0;i<totalUser;i++){
         user.name = "User"+std::to_string(i);
         user.priority = pr[i];
+        user.proportion = pro[i];
         user.userIndex = userIndex;
         user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
         user.userColor = colorQueue.front();
@@ -89,11 +91,13 @@ GenerateJob::GenerateJob(){
             job.user = &userVector[i];
             job.jobIndex = jobIndex;
             jobIndex++;
+            job.jobVectorIndex = jobVectorIndex;
             temJob.push_back(job);
             userVector[i].totalJob = userVector[i].totalJob+1;
         }
         jobQueue.push(temJob);
         jobVector.push_back(temJob);
+        jobVectorIndex++;
         jobIndex = 0;
         temJob.clear();
     }
@@ -101,7 +105,7 @@ GenerateJob::GenerateJob(){
     // 建立workFlow
     //hierarchy:[1, 4, 2, 3]
     //workflowHierarchy:[[0], [1, 2, 3, 4], [5, 6], [7, 8, 9]]
-    hierarchy = {1, 4, 2, 3};
+    hierarchy = {10};
     std::vector<int> temHierarchy;
     jobIndex = 0;
     int end = 0;

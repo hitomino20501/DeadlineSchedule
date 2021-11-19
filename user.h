@@ -19,6 +19,9 @@ struct User{
     int finishJob = 0;
     int totalJob = 0;
     int renderingJob = 0;
+    int denominator = 0;
+    int proportion = 0;
+    int limitUserWeight = -1;
     std::string userColor;
 };
 

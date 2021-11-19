@@ -16,6 +16,7 @@ struct Job{
     int errorFrame = 0;
     int finishFrame = 0;
     int weight = 0;
+    int jobVectorIndex = 0;
     bool isJobFinish = false;
     bool isActivate = false;
     std::string jobColor;

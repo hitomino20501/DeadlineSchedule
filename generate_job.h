@@ -35,6 +35,7 @@ private:
     int SW = 0;
     int RB = 0;
     int RW = -1;
+    int jobVectorIndex = 0;
     GenerateJob();
     void generateColor();
 };

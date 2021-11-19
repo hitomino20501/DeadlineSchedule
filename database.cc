@@ -32,6 +32,8 @@ class Database : public cSimpleModule{
         //int queueableJob = totalUser * eachUserJob;
         int logFlag = 0;
         int limitSearchUser = 0;
+        int denominator = 0;
+        int totalSlave = 17;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
         void generateColor(std::queue<std::string> *colorQueue);
@@ -214,13 +216,14 @@ void Database::handleMessage(cMessage *msg){
             destQueue.push(dest);
             Dispatch *receiveJob = check_and_cast<Dispatch *>(msg);
             int userIndex = receiveJob->getJob().user->userIndex;
+            int jobVectorIndex = receiveJob->getJob().jobVectorIndex;
             int jobIndex = receiveJob->getJob().jobIndex;
             delete receiveJob;
 
             struct User* user;
             struct Job* job;
             user = &userVector.at(userIndex);
-            job = &jobVector[userIndex].at(jobIndex);
+            job = &jobVector[jobVectorIndex].at(jobIndex);
 
             // §ó·suser
             user->userRenderingFrame = user->userRenderingFrame - 1;
@@ -236,12 +239,30 @@ void Database::handleMessage(cMessage *msg){
                 job->isJobFinish = true;
                 job->isActivate = false;
                 user->renderingJob = user->renderingJob - 1;
+                user->finishJob = user->finishJob + 1;
                 queueableJob--;
                 if(user->userIndex==0){
                     cMessage *drawNode = new cMessage("drawNode");
                     drawNode->setKind(WorkerState::JOB_FINISH);
                     cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
                     sendDirect(drawNode, node, "in", 0);
+                }
+                if(user->finishJob == user->totalJob){
+                    denominator = denominator - user->proportion;
+                    double tempWeight = 0.0;
+                    int index = 0;
+                    for (auto it = userVector.begin(); it != userVector.end(); ++it){
+                        if(index==limitSearchUser){
+                            break;
+                        }
+                        if(index==user->userIndex){
+                            continue;
+                        }
+                        tempWeight = totalSlave*((it->proportion)/denominator);
+                        (*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
+                        (*it).limitUserWeight = (int)round(tempWeight);
+                        index++;
+                    }
                 }
             }
 
@@ -263,6 +284,33 @@ void Database::handleMessage(cMessage *msg){
             delete submitJob;*/
             queueableJob = queueableJob + jobVector[limitSearchUser].size();
             limitSearchUser++;
+            int index = 0;
+            for (auto it = userVector.begin(); it != userVector.end(); ++it){
+                if(index==limitSearchUser){
+                    break;
+                }
+                if((*it).finishJob != (*it).totalJob){
+                    denominator = denominator + (*it).proportion;
+                }
+                index++;
+            }
+            double tempWeight = 0.0;
+            index = 0;
+            for (auto it = userVector.begin(); it != userVector.end(); ++it){
+                if(index==limitSearchUser){
+                    break;
+                }
+                tempWeight = totalSlave * ((it->proportion)/denominator);
+                if((*it).limitUserWeight == -1){
+                    (*it).limitUserWeight = (int)round(tempWeight);
+                    (*it).userWeight = (int)round(tempWeight);
+                }
+                else{
+                    (*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
+                    (*it).limitUserWeight = (int)round(tempWeight);
+                }
+                index++;
+            }
             delete msg;
             /*Submit *submitJob = check_and_cast<Submit *>(msg);
             jobVector.push_back(submitJob->getWorkflow().userJobs);
