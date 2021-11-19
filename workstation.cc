@@ -186,7 +186,7 @@ void Workstation::handleMessage(cMessage *msg){
         }
         if(countUser<userVector.size()){
             msg->setSchedulingPriority(1);
-            scheduleAt(simTime()+1.0, msg);
+            scheduleAt(simTime()+5.0, msg);
         }else{
             cancelAndDelete(msg);
         }

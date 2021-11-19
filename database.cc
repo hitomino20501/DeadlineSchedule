@@ -32,8 +32,8 @@ class Database : public cSimpleModule{
         //int queueableJob = totalUser * eachUserJob;
         int logFlag = 0;
         int limitSearchUser = 0;
-        int denominator = 0;
-        int totalSlave = 17;
+        double denominator = 0.0;
+        double totalSlave = 100.0;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
         void generateColor(std::queue<std::string> *colorQueue);
@@ -229,6 +229,7 @@ void Database::handleMessage(cMessage *msg){
             user->userRenderingFrame = user->userRenderingFrame - 1;
             user->userFinishFrame = user->userFinishFrame + 1;
             user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
+            //user->userWeight = user->userWeight - 1;
 
             // §ó·sjob
             job->renderingFrame = job->renderingFrame - 1;
@@ -248,6 +249,7 @@ void Database::handleMessage(cMessage *msg){
                     sendDirect(drawNode, node, "in", 0);
                 }
                 if(user->finishJob == user->totalJob){
+                    EV<<user->name<<"finisd all job\n";
                     denominator = denominator - user->proportion;
                     double tempWeight = 0.0;
                     int index = 0;
@@ -258,8 +260,9 @@ void Database::handleMessage(cMessage *msg){
                         if(index==user->userIndex){
                             continue;
                         }
-                        tempWeight = totalSlave*((it->proportion)/denominator);
-                        (*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
+                        tempWeight = totalSlave*((*it).proportion/denominator);
+                        (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
+                        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
                         (*it).limitUserWeight = (int)round(tempWeight);
                         index++;
                     }
@@ -285,6 +288,7 @@ void Database::handleMessage(cMessage *msg){
             queueableJob = queueableJob + jobVector[limitSearchUser].size();
             limitSearchUser++;
             int index = 0;
+            denominator = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
                 if(index==limitSearchUser){
                     break;
@@ -294,22 +298,31 @@ void Database::handleMessage(cMessage *msg){
                 }
                 index++;
             }
+            EV<<"denominator: "<<denominator<<"\n";
             double tempWeight = 0.0;
             index = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
                 if(index==limitSearchUser){
                     break;
                 }
-                tempWeight = totalSlave * ((it->proportion)/denominator);
+                EV<<(*it).name<<":proportion: "<<(*it).proportion<<"\n";
+                EV<<(*it).name<<":cal: "<<(*it).proportion/denominator<<"\n";
+                tempWeight = totalSlave * ((*it).proportion/denominator);
+                EV<<(*it).name<<":tempWeight: "<<tempWeight<<"\n";
                 if((*it).limitUserWeight == -1){
                     (*it).limitUserWeight = (int)round(tempWeight);
-                    (*it).userWeight = (int)round(tempWeight);
+                    //(*it).userWeight = (int)round(tempWeight);
+                    (*it).priority = (int)round(tempWeight);
+                    (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
                 }
                 else{
-                    (*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
+                    //(*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
+                    (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
+                    (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
                     (*it).limitUserWeight = (int)round(tempWeight);
                 }
                 index++;
+                EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
             }
             delete msg;
             /*Submit *submitJob = check_and_cast<Submit *>(msg);
@@ -352,7 +365,7 @@ User& Database::findDispatchUser(){
             break;
         }
         if(!isAllJobFinisd((*it).userIndex)){
-            //EV<<"Weight: "<<(*it).userWeight<<"\n";
+            EV<<"findDispatchUser:Weight: "<<(*it).userWeight<<"\n";
             if((*it).userWeight > max){
                 max = (*it).userWeight;
                 maxIndex = (*it).userIndex;
