@@ -18,6 +18,7 @@ class Database : public cSimpleModule{
     private:
         std::vector<std::vector<Job>>& jobVector = GenerateJob::getInstance().getAllJob();
         std::vector<User> balancedVector;
+        std::vector<User> proportionVector;
         std::queue<int> destQueue;
         std::queue<std::string> colorQueue;
         //std::vector<User> userVector;
@@ -248,7 +249,7 @@ void Database::handleMessage(cMessage *msg){
                     cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
                     sendDirect(drawNode, node, "in", 0);
                 }
-                if(user->finishJob == user->totalJob){
+                /*if(user->finishJob == user->totalJob){
                     EV<<user->name<<"finisd all job\n";
                     denominator = denominator - user->proportion;
                     double tempWeight = 0.0;
@@ -257,16 +258,20 @@ void Database::handleMessage(cMessage *msg){
                         if(index==limitSearchUser){
                             break;
                         }
-                        if(index==user->userIndex){
+                        if((*it).finishJob == (*it).totalJob){
+                            EV<<(*it).name<<":"<<"continue"<<"\n";
                             continue;
                         }
+                        EV<<(*it).name<<":denominator:"<<denominator<<"\n";
+                        EV<<(*it).name<<":proportion:"<<(*it).proportion<<"\n";
                         tempWeight = totalSlave*((*it).proportion/denominator);
+                        EV<<(*it).name<<":"<<tempWeight<<"\n";
                         (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
                         (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
                         (*it).limitUserWeight = (int)round(tempWeight);
                         index++;
                     }
-                }
+                }*/
             }
 
             // 再從queue中選擇一個合適的工作
@@ -275,6 +280,10 @@ void Database::handleMessage(cMessage *msg){
                 job = findDispatchJob(user);
                 if(job!=nullptr){
                     dispatchJob(user, job);
+                }else{
+                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                    scheduleAt(simTime()+0.5, noDispatchJob);
                 }
             }
         }else if(msgKind==WorkerState::SUBMIT_JOB){
@@ -287,7 +296,7 @@ void Database::handleMessage(cMessage *msg){
             delete submitJob;*/
             queueableJob = queueableJob + jobVector[limitSearchUser].size();
             limitSearchUser++;
-            int index = 0;
+            /*int index = 0;
             denominator = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
                 if(index==limitSearchUser){
@@ -323,7 +332,7 @@ void Database::handleMessage(cMessage *msg){
                 }
                 index++;
                 EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
-            }
+            }*/
             delete msg;
             /*Submit *submitJob = check_and_cast<Submit *>(msg);
             jobVector.push_back(submitJob->getWorkflow().userJobs);
@@ -358,6 +367,48 @@ void Database::refreshDisplay() const{
  * */
 User& Database::findDispatchUser(){
     int index = 0;
+    for (auto it = userVector.begin(); it != userVector.end(); ++it){
+        if(index==limitSearchUser){
+            break;
+        }
+        if(!isAllJobFinisd((*it).userIndex)){
+            proportionVector.push_back(*it);
+        }
+        index++;
+    }
+    denominator = 0;
+    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
+        if((*it).finishJob != (*it).totalJob){
+            denominator = denominator + (*it).proportion;
+        }
+    }
+    EV<<"denominator: "<<denominator<<"\n";
+    double tempWeight = 0.0;
+    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
+        EV<<(*it).name<<":proportion: "<<(*it).proportion<<"\n";
+        EV<<(*it).name<<":cal: "<<(*it).proportion/denominator<<"\n";
+        tempWeight = totalSlave * ((*it).proportion/denominator);
+        EV<<(*it).name<<":tempWeight: "<<tempWeight<<"\n";
+        if((*it).limitUserWeight == -1){
+            (*it).limitUserWeight = (int)round(tempWeight);
+            //(*it).userWeight = (int)round(tempWeight);
+            (*it).priority = (int)round(tempWeight);
+            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
+        }
+        else{
+            //(*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
+            (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
+            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
+            (*it).limitUserWeight = (int)round(tempWeight);
+        }
+        EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
+    }
+    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
+        userVector[(*it).userIndex] = (*it);
+    }
+    proportionVector.clear();
+
+    index = 0;
     int max = -1000;
     int maxIndex = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
