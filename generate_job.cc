@@ -93,7 +93,7 @@ GenerateJob::GenerateJob(){
             jobIndex++;
             job.jobVectorIndex = jobVectorIndex;
             temJob.push_back(job);
-            userVector[i].totalJob = userVector[i].totalJob+1;
+            //userVector[i].totalJob = userVector[i].totalJob+1;
         }
         jobQueue.push(temJob);
         jobVector.push_back(temJob);
@@ -101,58 +101,6 @@ GenerateJob::GenerateJob(){
         jobIndex = 0;
         temJob.clear();
     }
-
-    // 建立workFlow
-    //hierarchy:[1, 4, 2, 3]
-    //workflowHierarchy:[[0], [1, 2, 3, 4], [5, 6], [7, 8, 9]]
-    hierarchy = {1, 9};
-    std::vector<int> temHierarchy;
-    jobIndex = 0;
-    int end = 0;
-    for(int i=0;i<hierarchy.size();i++){
-        end = jobIndex+hierarchy[i];
-        for(int j=jobIndex;j<end;j++){
-            temHierarchy.push_back(jobIndex);
-            jobIndex++;
-        }
-        workflowHierarchy.push_back(temHierarchy);
-        temHierarchy.clear();
-    }
-    /*for (auto it = workflowHierarchy.begin(); it != workflowHierarchy.end(); ++it){
-        EV<<"Size:"<<it->size()<<"\n";
-    }*/
-    // 產生adj
-    for(int i=0;i<hierarchy.size();i++){
-        if(i==0){
-            // 第一層
-            for(int j=0;j<hierarchy[i];j++){
-                for(int k=0;k<10;k++){
-                    temHierarchy.push_back(0);
-                }
-                adj.push_back(temHierarchy);
-                temHierarchy.clear();
-            }
-        }else{
-            for(int j=0;j<hierarchy[i];j++){
-                for(int k=0;k<10;k++){
-                    if(std::binary_search(workflowHierarchy[i-1].begin(), workflowHierarchy[i-1].end(), k)){
-                        temHierarchy.push_back(1);
-                    }else{
-                        temHierarchy.push_back(0);
-                    }
-                }
-                adj.push_back(temHierarchy);
-                temHierarchy.clear();
-            }
-        }
-    }
-    /*for (auto it = adj.begin(); it != adj.end(); ++it){
-        //EV<<"Size:"<<it->size()<<"\n";
-        for (auto it2 = it->begin(); it2 != it->end(); ++it2){
-            EV<<*it2<<" ";
-        }
-        EV<<"\n";
-    }*/
 }
 
 GenerateJob& GenerateJob::getInstance(){

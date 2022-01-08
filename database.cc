@@ -138,9 +138,9 @@ void Database::handleMessage(cMessage *msg){
             int renderingFrameZero = 0;
             int index = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
-                if(index==limitSearchUser){
+                /*if(index==limitSearchUser){
                     break;
-                }
+                }*/
                 EV<<"{";
                 EV<<"'simTime':"<<simTime()<<",";
                 EV<<"'userName':'"<<(*it).name<<"',";
@@ -243,12 +243,12 @@ void Database::handleMessage(cMessage *msg){
                 user->renderingJob = user->renderingJob - 1;
                 user->finishJob = user->finishJob + 1;
                 queueableJob--;
-                if(user->userIndex==0){
+                /*if(user->userIndex==0){
                     cMessage *drawNode = new cMessage("drawNode");
                     drawNode->setKind(WorkerState::JOB_FINISH);
                     cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
                     sendDirect(drawNode, node, "in", 0);
-                }
+                }*/
                 /*if(user->finishJob == user->totalJob){
                     EV<<user->name<<"finisd all job\n";
                     denominator = denominator - user->proportion;
@@ -294,8 +294,16 @@ void Database::handleMessage(cMessage *msg){
             queueableJob = queueableJob + jobVector[limitSearchUser].size();
             limitSearchUser++;
             delete submitJob;*/
-            queueableJob = queueableJob + jobVector[limitSearchUser].size();
-            limitSearchUser++;
+            /*queueableJob = queueableJob + jobVector[limitSearchUser].size();
+            limitSearchUser++;*/
+            struct Job job;
+            Dispatch *submitJob = check_and_cast<Dispatch *>(msg);
+            job = submitJob->getJob();
+            userVector[job.user->userIndex].totalJob++;
+            queueableJob++;
+            EV<<"userIndex:"<<job.user->userIndex<<"\n";
+            EV<<"userTotalJob:"<<userVector[job.user->userIndex].totalJob<<"\n";
+            EV<<"queueableJob:"<<queueableJob<<"\n";
             /*int index = 0;
             denominator = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
@@ -333,7 +341,7 @@ void Database::handleMessage(cMessage *msg){
                 index++;
                 EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
             }*/
-            delete msg;
+            delete submitJob;
             /*Submit *submitJob = check_and_cast<Submit *>(msg);
             jobVector.push_back(submitJob->getWorkflow().userJobs);
             queueableJob = queueableJob + submitJob->getWorkflow().userJobs.size();
@@ -368,9 +376,9 @@ void Database::refreshDisplay() const{
 User& Database::findDispatchUser(){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        if(index==limitSearchUser){
+        /*if(index==limitSearchUser){
             break;
-        }
+        }*/
         if(!isAllJobFinisd((*it).userIndex)){
             proportionVector.push_back(*it);
         }
@@ -412,9 +420,9 @@ User& Database::findDispatchUser(){
     int max = -1000;
     int maxIndex = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        if(index==limitSearchUser){
+        /*if(index==limitSearchUser){
             break;
-        }
+        }*/
         if(!isAllJobFinisd((*it).userIndex)){
             EV<<"findDispatchUser:Weight: "<<(*it).userWeight<<"\n";
             if((*it).userWeight > max){
@@ -428,9 +436,9 @@ User& Database::findDispatchUser(){
     // balance 當weight一樣 把slave分配給render數量低的user
     index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        if(index==limitSearchUser){
+        /*if(index==limitSearchUser){
             break;
-        }
+        }*/
         if(!isAllJobFinisd((*it).userIndex)){
             if((*it).userWeight == max){
                 balancedVector.push_back(*it);
@@ -461,14 +469,19 @@ User& Database::findDispatchUser(){
 
 Job* Database::findDispatchJob(User *user){
     // TODO:後面加入workFlow
-    /*int index = 0;
+    int index = 0;
+    int i = 0;
     for (auto it = jobVector[(*user).userIndex].begin(); it != jobVector[(*user).userIndex].end(); ++it){
+        if(i==(*user).totalJob){
+            break;
+        }
+        i++;
         if((!(*it).isJobFinish) && ((*it).finishFrame+(*it).renderingFrame<(*it).totalFrame)){
             index = (*it).jobIndex;
             return &(jobVector[(*user).userIndex].at(index));
         }
-    }*/
-    for(int i=0;i<adj.size();i++){
+    }
+    /*for(int i=0;i<adj.size();i++){
         int checkDependency = 0;
         int dependencyJob = accumulate(adj[i].begin(), adj[i].end(), 0);
         if(dependencyJob==0){
@@ -489,7 +502,7 @@ Job* Database::findDispatchJob(User *user){
                 }
             }
         }
-    }
+    }*/
 
     return nullptr;
 }
@@ -501,12 +514,12 @@ void Database::dispatchJob(User* user, Job* job){
     if(!job->isActivate){
         user->renderingJob = user->renderingJob + 1;
         job->isActivate = true;
-        if(user->userIndex==0){
+        /*if(user->userIndex==0){
             cMessage *drawNode = new cMessage("drawNode");
             drawNode->setKind(WorkerState::JOB_START);
             cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
             sendDirect(drawNode, node, "in", 0);
-        }
+        }*/
     }
     user->userRenderingFrame = user->userRenderingFrame+1;
     user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
@@ -538,16 +551,21 @@ bool Database::isOverTotalFrame(Job *job){
 }
 
 bool Database::isAllJobFinisd(int userIndex){
-    /*for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
+    int i = 0;
+    for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
+        if(i==userVector[userIndex].totalJob){
+            break;
+        }
+        i++;
         if(!(*it).isJobFinish){
             if((*it).finishFrame+(*it).renderingFrame<(*it).totalFrame){
                 return false;
             }
         }
-    }*/
+    }
     // 從workFlow搜尋
     //TODO:為每個人建立一個fowkFlow
-    for(int i=0;i<adj.size();i++){
+    /*for(int i=0;i<adj.size();i++){
         int checkDependency = 0;
         int dependencyJob = accumulate(adj[i].begin(), adj[i].end(), 0);
         if(dependencyJob==0){
@@ -568,7 +586,7 @@ bool Database::isAllJobFinisd(int userIndex){
                 }
             }
         }
-    }
+    }*/
     return true;
 }
 

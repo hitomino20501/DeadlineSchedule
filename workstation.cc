@@ -154,9 +154,17 @@ void Workstation::handleMessage(cMessage *msg){
             submitJob->setWorkflow(workflow);
             send(submitJob, "out");
             countUser++;*/
+            struct Job job;
+            if(countUser<userVector.size()){
+                job.user = &userVector[countUser];
+            }
+            else if(countUser==userVector.size()){
+                job.user = &userVector[0];
+            }
             Dispatch *submitJob = new Dispatch("submitJob");
             submitJob->setKind(WorkerState::SUBMIT_JOB);
             submitJob->setSchedulingPriority(1);
+            submitJob->setJob(job);
             send(submitJob, "out");
             countUser++;
             /*for (auto it = userVector.begin(); it != userVector.end(); ++it){
@@ -187,7 +195,12 @@ void Workstation::handleMessage(cMessage *msg){
         if(countUser<userVector.size()){
             msg->setSchedulingPriority(1);
             scheduleAt(simTime()+5.0, msg);
-        }else{
+        }
+        else if(countUser==userVector.size()){
+            msg->setSchedulingPriority(1);
+            scheduleAt(simTime()+100.0, msg);
+        }
+        else{
             cancelAndDelete(msg);
         }
         /*if(!jobQueue.empty()){
