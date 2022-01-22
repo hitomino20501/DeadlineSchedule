@@ -192,13 +192,15 @@ void Workstation::handleMessage(cMessage *msg){
             submitJob->setJob(job);
             send(submitJob, "out");*/
         }
-        if(countUser<userVector.size()){
-            msg->setSchedulingPriority(1);
-            scheduleAt(simTime()+5.0, msg);
-        }
-        else if(countUser==userVector.size()){
+        /*
+         * else if(countUser==userVector.size()){
             msg->setSchedulingPriority(1);
             scheduleAt(simTime()+100.0, msg);
+        }
+         * */
+        if(countUser<userVector.size()){
+            msg->setSchedulingPriority(1);
+            scheduleAt(simTime()+1.5, msg);
         }
         else{
             cancelAndDelete(msg);
