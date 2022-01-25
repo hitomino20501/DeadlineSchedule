@@ -35,6 +35,7 @@ class Database : public cSimpleModule{
         int limitSearchUser = 0;
         double denominator = 0.0;
         double totalSlave = 100.0;
+        simtime_t DAY = 50.0;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
         void generateColor(std::queue<std::string> *colorQueue);
@@ -99,7 +100,7 @@ void Database::initialize(){
     Dispatch *statistics = new Dispatch("statistics");
     statistics->setKind(WorkerState::STATISTICS);
     statistics->setSchedulingPriority(11);
-    scheduleAt(50.0, statistics);
+    scheduleAt(DAY, statistics);
 
     // 以下省略 改用workstation送出工作 舊版 以廢棄
     /*queueableJob = totalUser * eachUserJob;
@@ -179,7 +180,7 @@ void Database::handleMessage(cMessage *msg){
                 for(int j=0;j<(*it).taskVector.size();j++){
                     if((*it).taskVector[j].isDispatch==true){
                         if((*it).taskVector[j].isFinish==true){
-                            if(((*it).taskVector[j].startTime>=simTime()-50.0) && ((*it).taskVector[j].finisdTime<simTime())){
+                            if(((*it).taskVector[j].startTime>=simTime()-DAY) && ((*it).taskVector[j].finisdTime<simTime())){
                                 totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
                             }
                         }
@@ -200,7 +201,7 @@ void Database::handleMessage(cMessage *msg){
             EV<<"simTime: "<<simTime()<<"totalTime :"<<totalTime<<"\n";
             if(logFlag<4){
                 totalTime = 0.0;
-                scheduleAt(simTime()+50.0, msg);
+                scheduleAt(simTime()+DAY, msg);
             }else{
                 cancelAndDelete(msg);
             }
