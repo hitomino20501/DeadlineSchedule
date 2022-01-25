@@ -7,11 +7,13 @@
 
 #ifndef JOB_H_
 #define JOB_H_
+#include "task.h"
 
 struct Job{
     struct User* user;
     int jobIndex = 0;
-    int totalFrame = 800;
+    int totalFrame = 100;
+    std::vector<Task> taskVector;
     int renderingFrame = 0;
     int errorFrame = 0;
     int finishFrame = 0;

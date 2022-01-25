@@ -41,7 +41,7 @@ class Database : public cSimpleModule{
         bool isQueueHasJob();
         bool isOverTotalFrame(Job *job);
         bool isAllJobFinisd(int userIndex);
-        void dispatchJob(User* user, Job* job);
+        void dispatchJob(User* user, Job* job, int dest);
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -94,7 +94,12 @@ void Database::initialize(){
     Dispatch *msg = new Dispatch("log");
     msg->setKind(WorkerState::LOG_TIMER);
     msg->setSchedulingPriority(10);
-    scheduleAt(1.5, msg);
+    scheduleAt(1.0, msg);
+
+    Dispatch *statistics = new Dispatch("statistics");
+    statistics->setKind(WorkerState::STATISTICS);
+    statistics->setSchedulingPriority(11);
+    scheduleAt(50.0, statistics);
 
     // 以下省略 改用workstation送出工作 舊版 以廢棄
     /*queueableJob = totalUser * eachUserJob;
@@ -162,7 +167,45 @@ void Database::handleMessage(cMessage *msg){
                 cancelAndDelete(msg);
             }
 
-        }else{
+        }
+        else if(msgKind==WorkerState::STATISTICS){
+            int i = 0;
+            simtime_t totalTime = 0.0;
+            for (auto it = jobVector[0].begin(); it != jobVector[0].end(); ++it){
+                if(i==userVector[0].totalJob){
+                    break;
+                }
+                i++;
+                for(int j=0;j<(*it).taskVector.size();j++){
+                    if((*it).taskVector[j].isDispatch==true){
+                        if((*it).taskVector[j].isFinish==true){
+                            if(((*it).taskVector[j].startTime>=simTime()-50.0) && ((*it).taskVector[j].finisdTime<simTime())){
+                                totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+                            }
+                        }
+                        else{
+                            totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
+                            (*it).taskVector[j].startTime = simTime();
+                        }
+                    }
+                    /*if(((*it).taskVector[j].finisdTime==0) && ((*it).taskVector[j].isDispatch==true) && ((*it).taskVector[j].startTime<simTime())){
+                        totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
+                    }
+                    else{
+                        totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+                    }*/
+                    //totalTime = totalTime + (*it).taskVector[j].renderTime;
+                }
+            }
+            EV<<"simTime: "<<simTime()<<"totalTime :"<<totalTime<<"\n";
+            if(logFlag<4){
+                totalTime = 0.0;
+                scheduleAt(simTime()+50.0, msg);
+            }else{
+                cancelAndDelete(msg);
+            }
+        }
+        else{
             EV<<"Database receive a message from itself"<<simTime()<<"\n";
             EV<<"Finished the request: "<<simTime()<<"\n";
             /*EV<<"Dispatch job info:\n";
@@ -191,7 +234,7 @@ void Database::handleMessage(cMessage *msg){
                 user = &findDispatchUser();
                 job = findDispatchJob(user);
                 if(job!=nullptr){
-                    dispatchJob(user, job);
+                    dispatchJob(user, job, dest);
                 }else{
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
@@ -235,6 +278,16 @@ void Database::handleMessage(cMessage *msg){
             // 更新job
             job->renderingFrame = job->renderingFrame - 1;
             job->finishFrame = job->finishFrame + 1;
+            for (auto it = job->taskVector.begin(); it != job->taskVector.end(); ++it){
+                if(((*it).slaveId == dest) && (!(*it).isFinish)){
+                    (*it).isFinish = true;
+                    (*it).finisdTime = simTime();
+                    /*EV<<"Frame start: "<<(*it).startTime<<"\n";
+                    EV<<"Frame render: "<<(*it).renderTime<<"\n";
+                    EV<<"Frame finish: "<<(*it).finisdTime<<"\n";*/
+                    break;
+                }
+            }
 
             // 檢查job是否完成
             if(job->finishFrame==job->totalFrame){
@@ -279,7 +332,7 @@ void Database::handleMessage(cMessage *msg){
                 user = &findDispatchUser();
                 job = findDispatchJob(user);
                 if(job!=nullptr){
-                    dispatchJob(user, job);
+                    dispatchJob(user, job, dest);
                 }else{
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
@@ -301,9 +354,10 @@ void Database::handleMessage(cMessage *msg){
             job = submitJob->getJob();
             userVector[job.user->userIndex].totalJob++;
             queueableJob++;
-            EV<<"userIndex:"<<job.user->userIndex<<"\n";
+            // 重要log
+            /*EV<<"userIndex:"<<job.user->userIndex<<"\n";
             EV<<"userTotalJob:"<<userVector[job.user->userIndex].totalJob<<"\n";
-            EV<<"queueableJob:"<<queueableJob<<"\n";
+            EV<<"queueableJob:"<<queueableJob<<"\n";*/
             /*int index = 0;
             denominator = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
@@ -390,13 +444,13 @@ User& Database::findDispatchUser(){
             denominator = denominator + (*it).proportion;
         }
     }
-    EV<<"denominator: "<<denominator<<"\n";
+    //EV<<"denominator: "<<denominator<<"\n";
     double tempWeight = 0.0;
     for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
-        EV<<(*it).name<<":proportion: "<<(*it).proportion<<"\n";
-        EV<<(*it).name<<":cal: "<<(*it).proportion/denominator<<"\n";
+        //EV<<(*it).name<<":proportion: "<<(*it).proportion<<"\n";
+        //EV<<(*it).name<<":cal: "<<(*it).proportion/denominator<<"\n";
         tempWeight = totalSlave * ((*it).proportion/denominator);
-        EV<<(*it).name<<":tempWeight: "<<tempWeight<<"\n";
+        //EV<<(*it).name<<":tempWeight: "<<tempWeight<<"\n";
         if((*it).limitUserWeight == -1){
             (*it).limitUserWeight = (int)round(tempWeight);
             //(*it).userWeight = (int)round(tempWeight);
@@ -409,7 +463,7 @@ User& Database::findDispatchUser(){
             (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
             (*it).limitUserWeight = (int)round(tempWeight);
         }
-        EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
+        //EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
     }
     for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
         userVector[(*it).userIndex] = (*it);
@@ -424,7 +478,7 @@ User& Database::findDispatchUser(){
             break;
         }*/
         if(!isAllJobFinisd((*it).userIndex)){
-            EV<<"findDispatchUser:Weight: "<<(*it).userWeight<<"\n";
+            //EV<<"findDispatchUser:Weight: "<<(*it).userWeight<<"\n";
             if((*it).userWeight > max){
                 max = (*it).userWeight;
                 maxIndex = (*it).userIndex;
@@ -507,7 +561,7 @@ Job* Database::findDispatchJob(User *user){
     return nullptr;
 }
 
-void Database::dispatchJob(User* user, Job* job){
+void Database::dispatchJob(User* user, Job* job, int dest){
     // 更新user狀態
     //EV<<"GATUSERINDEX: "<<user->userIndex<<"\n";
     //EV<<"GATJOBINDEX: "<<job->jobIndex<<"\n";
@@ -526,6 +580,15 @@ void Database::dispatchJob(User* user, Job* job){
 
     // 更新job狀態
     job->renderingFrame = job->renderingFrame + 1;
+    for (auto it = job->taskVector.begin(); it != job->taskVector.end(); ++it){
+        if(!(*it).isDispatch){
+            (*it).isDispatch = true;
+            (*it).slaveId = dest;
+            (*it).startTime = simTime();
+            break;
+        }
+    }
+
 
     // 新增一個Dispatch訊息
     Dispatch *dispatchJob = new Dispatch("dispatchJob");

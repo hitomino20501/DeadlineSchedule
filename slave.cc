@@ -3,15 +3,17 @@
 #include <cmath>
 #include "state.h"
 #include "dispatch_m.h"
+#include "generate_job.h"
 
 using namespace omnetpp;
 
 class Slave : public cSimpleModule{
     private:
-        struct Job job;
+        struct Job* job;
         bool renderColor = false;
         std::string userColor;
         std::string userName;
+        std::vector<std::vector<Job>>& jobVector = GenerateJob::getInstance().getAllJob();
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -25,7 +27,7 @@ void Slave::initialize(){
     Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::REQUEST_JOB);
     // 延遲 2秒
-    scheduleAt(2.0, msg);
+    scheduleAt(1.0, msg);
 }
 
 void Slave::handleMessage(cMessage *msg){
@@ -50,12 +52,20 @@ void Slave::handleMessage(cMessage *msg){
         // 處理來自server的message
         EV<<"Slave got a message(job) from database: "<<simTime()<<"\n";
         int msgKind = msg->getKind();
+        int senderGate = msg->getSenderGate()->getIndex();
+        //EV<<"Slave got a message(job) from: "<<test<<" gate\n";
         if(msgKind==WorkerState::Dispatch_JOB){
             // Log
             Dispatch *dispatchJob = check_and_cast<Dispatch *>(msg);
-            job = dispatchJob->getJob();
+            /*job = dispatchJob->getJob();
             userColor = job.user->userColor;
-            userName = job.user->name;
+            userName = job.user->name;*/
+
+            int jobVectorIndex = dispatchJob->getJob().jobVectorIndex;
+            int jobIndex = dispatchJob->getJob().jobIndex;
+            job = &jobVector[jobVectorIndex].at(jobIndex);
+            userColor = job->user->userColor;
+            userName = job->user->name;
             /*EV<<"Job info:\n";
             EV<<"  jobIndex:"<<job.jobIndex<<"\n";
             EV<<"  userName:"<<job.user.name<<"\n";
@@ -68,6 +78,12 @@ void Slave::handleMessage(cMessage *msg){
             // 完成render 發送訊息給server
             renderColor = true;
             simtime_t renderTime = round(par("delayTime"));
+            for (auto it = job->taskVector.begin(); it != job->taskVector.end(); ++it){
+                if(((*it).slaveId == senderGate) && (!(*it).isFinish)){
+                    (*it).renderTime = renderTime;
+                    break;
+                }
+            }
             scheduleAt(simTime()+renderTime, msg);
         }else if(msgKind==WorkerState::NO_Dispatch_JOB){
             EV<<"Database no pending job: "<<simTime()<<"\n";

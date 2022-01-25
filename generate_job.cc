@@ -5,7 +5,8 @@
 #include "generate_job.h"
 #include "user.h"
 #include "job.h"
-#define totalUser 8
+#include "task.h"
+#define totalUser 4
 #define eachUserJob 10
 
 using namespace omnetpp;
@@ -15,6 +16,7 @@ GenerateJob::GenerateJob(){
 
     struct Job job;
     struct User user;
+    struct Task task;
     userVector.reserve(totalUser);
 
     // 實驗環境1 150slave 16user 20eachUserJob 25task
@@ -65,7 +67,7 @@ GenerateJob::GenerateJob(){
 
     // 實驗環境2 17slave 4user 3eachUserJob 25task
     int pr[totalUser]={20, 15, 11, 10};
-    int pro[totalUser]={6, 6, 6, 2, 2, 2, 1, 1};
+    int pro[totalUser]={6, 2, 1, 1};
     int userIndex = 0;
     for(int i=0;i<totalUser;i++){
         user.name = "User"+std::to_string(i);
@@ -88,11 +90,17 @@ GenerateJob::GenerateJob(){
     for(int i=0;i<totalUser;i++){
         EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
         for(int j=0;j<eachUserJob;j++){
+            job.taskVector.reserve(job.totalFrame);
             job.user = &userVector[i];
             job.jobIndex = jobIndex;
             jobIndex++;
             job.jobVectorIndex = jobVectorIndex;
+            for(int k=0;k<job.totalFrame;k++){
+                task.taskIndex = k;
+                job.taskVector.push_back(task);
+            }
             temJob.push_back(job);
+            job.taskVector.clear();
             //userVector[i].totalJob = userVector[i].totalJob+1;
         }
         jobQueue.push(temJob);

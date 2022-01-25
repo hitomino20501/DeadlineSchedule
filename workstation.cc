@@ -9,7 +9,7 @@
 #include "dispatch_m.h"
 #include "generate_job.h"
 #define totalUser 4
-#define eachUserJob 3
+#define eachUserJob 10
 
 using namespace omnetpp;
 
@@ -122,7 +122,7 @@ void Workstation::initialize(){
 
     Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::SUBMIT_JOB);
-    scheduleAt(1.0, msg);
+    scheduleAt(0, msg);
 
     // ²£¥Íjob
     /*int jobIndex = 0;
@@ -155,12 +155,15 @@ void Workstation::handleMessage(cMessage *msg){
             send(submitJob, "out");
             countUser++;*/
             struct Job job;
-            if(countUser<userVector.size()){
+            if(countUser<totalUser*eachUserJob){
+                job.user = &userVector[countUser%totalUser];
+            }
+            /*if(countUser<userVector.size()){
                 job.user = &userVector[countUser];
             }
             else if(countUser==userVector.size()){
                 job.user = &userVector[0];
-            }
+            }*/
             Dispatch *submitJob = new Dispatch("submitJob");
             submitJob->setKind(WorkerState::SUBMIT_JOB);
             submitJob->setSchedulingPriority(1);
@@ -198,13 +201,20 @@ void Workstation::handleMessage(cMessage *msg){
             scheduleAt(simTime()+100.0, msg);
         }
          * */
-        if(countUser<userVector.size()){
+        if(countUser<totalUser*eachUserJob){
+            msg->setSchedulingPriority(1);
+            scheduleAt(simTime()+0.5, msg);
+        }
+        else{
+            cancelAndDelete(msg);
+        }
+        /*if(countUser<userVector.size()){
             msg->setSchedulingPriority(1);
             scheduleAt(simTime()+1.5, msg);
         }
         else{
             cancelAndDelete(msg);
-        }
+        }*/
         /*if(!jobQueue.empty()){
             msg->setSchedulingPriority(1);
             scheduleAt(simTime()+1.0, msg);

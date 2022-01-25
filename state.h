@@ -22,6 +22,7 @@ enum WorkerState{
    SHUT_DOWN_SLAVE = 10,
    JOB_START = 11,
    JOB_FINISH = 12,
+   STATISTICS = 13,
 };
 
 #endif /* STATE_H_ */
