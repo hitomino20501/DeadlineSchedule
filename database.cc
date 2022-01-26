@@ -35,7 +35,7 @@ class Database : public cSimpleModule{
         int limitSearchUser = 0;
         double denominator = 0.0;
         double totalSlave = 100.0;
-        simtime_t DAY = 50.0;
+        simtime_t DAY = 100.0;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
         void generateColor(std::queue<std::string> *colorQueue);
@@ -170,35 +170,42 @@ void Database::handleMessage(cMessage *msg){
 
         }
         else if(msgKind==WorkerState::STATISTICS){
-            int i = 0;
             simtime_t totalTime = 0.0;
-            for (auto it = jobVector[0].begin(); it != jobVector[0].end(); ++it){
-                if(i==userVector[0].totalJob){
-                    break;
-                }
-                i++;
-                for(int j=0;j<(*it).taskVector.size();j++){
-                    if((*it).taskVector[j].isDispatch==true){
-                        if((*it).taskVector[j].isFinish==true){
-                            if(((*it).taskVector[j].startTime>=simTime()-DAY) && ((*it).taskVector[j].finisdTime<simTime())){
-                                totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+            for(int index=0;index<jobVector.size();index++){
+                int i = 0;
+                totalTime = 0.0;
+                for (auto it = jobVector[index].begin(); it != jobVector[index].end(); ++it){
+                    if(i==userVector[index].totalJob){
+                        break;
+                    }
+                    i++;
+                    for(int j=0;j<(*it).taskVector.size();j++){
+                        if((*it).taskVector[j].isDispatch==true){
+                            if((*it).taskVector[j].isFinish==true){
+                                if(((*it).taskVector[j].startTime>=simTime()-DAY) && ((*it).taskVector[j].finisdTime<simTime())){
+                                    totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+                                }
+                            }
+                            else{
+                                totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
+                                (*it).taskVector[j].startTime = simTime();
                             }
                         }
-                        else{
+                        /*if(((*it).taskVector[j].finisdTime==0) && ((*it).taskVector[j].isDispatch==true) && ((*it).taskVector[j].startTime<simTime())){
                             totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
-                            (*it).taskVector[j].startTime = simTime();
                         }
+                        else{
+                            totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+                        }*/
+                        //totalTime = totalTime + (*it).taskVector[j].renderTime;
                     }
-                    /*if(((*it).taskVector[j].finisdTime==0) && ((*it).taskVector[j].isDispatch==true) && ((*it).taskVector[j].startTime<simTime())){
-                        totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
-                    }
-                    else{
-                        totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
-                    }*/
-                    //totalTime = totalTime + (*it).taskVector[j].renderTime;
                 }
+                EV<<"simTime: "<<simTime()<<" user"<<index<<" totalTime :"<<totalTime<<"\n";
             }
-            EV<<"simTime: "<<simTime()<<"totalTime :"<<totalTime<<"\n";
+            // 重制每位user能使用的量
+            for (auto it = userVector.begin(); it != userVector.end(); ++it){
+                (*it).userWeight = 100.0 * DAY.dbl() * ((*it).proportion/10.0);
+            }
             if(logFlag<4){
                 totalTime = 0.0;
                 scheduleAt(simTime()+DAY, msg);
@@ -207,8 +214,8 @@ void Database::handleMessage(cMessage *msg){
             }
         }
         else{
-            EV<<"Database receive a message from itself"<<simTime()<<"\n";
-            EV<<"Finished the request: "<<simTime()<<"\n";
+            ////EV<<"Database receive a message from itself"<<simTime()<<"\n";
+            ////EV<<"Finished the request: "<<simTime()<<"\n";
             /*EV<<"Dispatch job info:\n";
             EV<<"  user: "<<job.user.name<<"\n";
             EV<<"  priority: "<<job.user.priority<<"\n";
@@ -221,8 +228,8 @@ void Database::handleMessage(cMessage *msg){
         // 處理自worker/workstation的訊息
         int dest = msg->getArrivalGate()->getIndex();
         if(msgKind==WorkerState::REQUEST_JOB){
-            EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
-            EV<<"Message type: REQUEST_JOB\n";
+            ////EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
+            ////EV<<"Message type: REQUEST_JOB\n";
             destQueue.push(dest);
             // 刪除自worker的cMessage訊息
             delete msg;
@@ -255,9 +262,9 @@ void Database::handleMessage(cMessage *msg){
             }
         }
         else if(msgKind==WorkerState::FRAME_SUCCEEDED){
-            EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
+            ////EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
             // 取得jobIndex 更新vector中job狀態
-            EV<<"Message type: FRAME_SUCCEEDED\n";
+            ////EV<<"Message type: FRAME_SUCCEEDED\n";
             destQueue.push(dest);
             Dispatch *receiveJob = check_and_cast<Dispatch *>(msg);
             int userIndex = receiveJob->getJob().user->userIndex;
@@ -270,10 +277,12 @@ void Database::handleMessage(cMessage *msg){
             user = &userVector.at(userIndex);
             job = &jobVector[jobVectorIndex].at(jobIndex);
 
+            double use = 0.0;
+
             // 更新user
             user->userRenderingFrame = user->userRenderingFrame - 1;
             user->userFinishFrame = user->userFinishFrame + 1;
-            user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
+            //user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
             //user->userWeight = user->userWeight - 1;
 
             // 更新job
@@ -283,12 +292,15 @@ void Database::handleMessage(cMessage *msg){
                 if(((*it).slaveId == dest) && (!(*it).isFinish)){
                     (*it).isFinish = true;
                     (*it).finisdTime = simTime();
+                    use = (*it).finisdTime.dbl() - (*it).startTime.dbl();
                     /*EV<<"Frame start: "<<(*it).startTime<<"\n";
                     EV<<"Frame render: "<<(*it).renderTime<<"\n";
                     EV<<"Frame finish: "<<(*it).finisdTime<<"\n";*/
                     break;
                 }
             }
+            // 更新user
+            user->userWeight = user->userWeight - use;
 
             // 檢查job是否完成
             if(job->finishFrame==job->totalFrame){
@@ -341,8 +353,8 @@ void Database::handleMessage(cMessage *msg){
                 }
             }
         }else if(msgKind==WorkerState::SUBMIT_JOB){
-            EV<<"Database receive a message from workstation: "<<simTime()<<"\n";
-            EV<<"Message type: SUBMIT_JOB\n";
+            ////EV<<"Database receive a message from workstation: "<<simTime()<<"\n";
+            ////EV<<"Message type: SUBMIT_JOB\n";
             /*Submit *submitJob = check_and_cast<Submit *>(msg);
             userVector.push_back(*(submitJob->getWorkflow().user));
             queueableJob = queueableJob + jobVector[limitSearchUser].size();
@@ -430,56 +442,14 @@ void Database::refreshDisplay() const{
  * */
 User& Database::findDispatchUser(){
     int index = 0;
-    for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        /*if(index==limitSearchUser){
-            break;
-        }*/
-        if(!isAllJobFinisd((*it).userIndex)){
-            proportionVector.push_back(*it);
-        }
-        index++;
-    }
-    denominator = 0;
-    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
-        if((*it).finishJob != (*it).totalJob){
-            denominator = denominator + (*it).proportion;
-        }
-    }
-    //EV<<"denominator: "<<denominator<<"\n";
-    double tempWeight = 0.0;
-    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
-        //EV<<(*it).name<<":proportion: "<<(*it).proportion<<"\n";
-        //EV<<(*it).name<<":cal: "<<(*it).proportion/denominator<<"\n";
-        tempWeight = totalSlave * ((*it).proportion/denominator);
-        //EV<<(*it).name<<":tempWeight: "<<tempWeight<<"\n";
-        if((*it).limitUserWeight == -1){
-            (*it).limitUserWeight = (int)round(tempWeight);
-            //(*it).userWeight = (int)round(tempWeight);
-            (*it).priority = (int)round(tempWeight);
-            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
-        }
-        else{
-            //(*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
-            (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
-            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
-            (*it).limitUserWeight = (int)round(tempWeight);
-        }
-        //EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
-    }
-    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
-        userVector[(*it).userIndex] = (*it);
-    }
-    proportionVector.clear();
-
-    index = 0;
-    int max = -1000;
+    double max = -1000000.0;
     int maxIndex = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
         /*if(index==limitSearchUser){
             break;
         }*/
         if(!isAllJobFinisd((*it).userIndex)){
-            //EV<<"findDispatchUser:Weight: "<<(*it).userWeight<<"\n";
+            //proportionVector.push_back(*it);
             if((*it).userWeight > max){
                 max = (*it).userWeight;
                 maxIndex = (*it).userIndex;
@@ -577,7 +547,7 @@ void Database::dispatchJob(User* user, Job* job, int dest){
         }*/
     }
     user->userRenderingFrame = user->userRenderingFrame+1;
-    user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
+    //user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
 
     // 更新job狀態
     job->renderingFrame = job->renderingFrame + 1;

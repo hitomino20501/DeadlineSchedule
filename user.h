@@ -15,7 +15,7 @@ struct User{
     int userErrorFrame = 0;
     int userFinishFrame = 0;
     int userRenderingFrame = 0;
-    int userWeight = 0;
+    double userWeight = 0.0;
     int finishJob = 0;
     int totalJob = 0;
     int renderingJob = 0;

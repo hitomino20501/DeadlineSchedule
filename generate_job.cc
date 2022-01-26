@@ -69,12 +69,16 @@ GenerateJob::GenerateJob(){
     int pr[totalUser]={20, 15, 11, 10};
     int pro[totalUser]={6, 2, 1, 1};
     int userIndex = 0;
+    double atest = 0.0;
     for(int i=0;i<totalUser;i++){
         user.name = "User"+std::to_string(i);
         user.priority = pr[i];
         user.proportion = pro[i];
         user.userIndex = userIndex;
-        user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
+        //user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
+        atest = pro[i]/10.0;
+        EV<<"atest: "<<atest<<"\n";
+        user.userWeight = 100.0 * 100.0 * atest;
         user.userColor = colorQueue.front();
         userVector.push_back(user);
         userIndex++;
@@ -88,7 +92,7 @@ GenerateJob::GenerateJob(){
 
     int jobIndex = 0;
     for(int i=0;i<totalUser;i++){
-        EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
+        EV<<userVector[i].name<<":"<<userVector[i].userWeight<<"\n";
         for(int j=0;j<eachUserJob;j++){
             job.taskVector.reserve(job.totalFrame);
             job.user = &userVector[i];

@@ -32,17 +32,17 @@ void Slave::initialize(){
 
 void Slave::handleMessage(cMessage *msg){
     if(msg->isSelfMessage()){
-        EV<<"Slave got a message from itself: "<<simTime()<<"\n";
+        ////EV<<"Slave got a message from itself: "<<simTime()<<"\n";
         // 處理自己的message
         int msgKind = msg->getKind();
         if(msgKind==WorkerState::Dispatch_JOB){
-            EV<<"Slave render finish: "<<simTime()<<"\n";
+            ////EV<<"Slave render finish: "<<simTime()<<"\n";
             msg->setKind(WorkerState::FRAME_SUCCEEDED);
             msg->setSchedulingPriority(5);
             renderColor = false;
             send(msg, "out");
         }else{
-            EV<<"Slave request a job: "<<simTime()<<"\n";
+            ////EV<<"Slave request a job: "<<simTime()<<"\n";
             msg->setKind(WorkerState::REQUEST_JOB);
             msg->setSchedulingPriority(5);
             send(msg, "out");
@@ -50,7 +50,7 @@ void Slave::handleMessage(cMessage *msg){
     }
     else{
         // 處理來自server的message
-        EV<<"Slave got a message(job) from database: "<<simTime()<<"\n";
+        ////EV<<"Slave got a message(job) from database: "<<simTime()<<"\n";
         int msgKind = msg->getKind();
         int senderGate = msg->getSenderGate()->getIndex();
         //EV<<"Slave got a message(job) from: "<<test<<" gate\n";
@@ -72,12 +72,13 @@ void Slave::handleMessage(cMessage *msg){
             EV<<"  renderingFrame:"<<job.renderingFrame<<"\n";
             EV<<"  finishFrame:"<<job.finishFrame<<"\n";
             EV<<"  weight:"<<job.weight<<"\n";*/
-            EV<<"Slave start rendering: "<<simTime()<<"\n";
+            ////EV<<"Slave start rendering: "<<simTime()<<"\n";
 
             // 設定render時間
             // 完成render 發送訊息給server
             renderColor = true;
-            simtime_t renderTime = round(par("delayTime"));
+            //simtime_t renderTime = round(par("delayTime"));
+            simtime_t renderTime = 8.2;
             for (auto it = job->taskVector.begin(); it != job->taskVector.end(); ++it){
                 if(((*it).slaveId == senderGate) && (!(*it).isFinish)){
                     (*it).renderTime = renderTime;
@@ -86,10 +87,10 @@ void Slave::handleMessage(cMessage *msg){
             }
             scheduleAt(simTime()+renderTime, msg);
         }else if(msgKind==WorkerState::NO_Dispatch_JOB){
-            EV<<"Database no pending job: "<<simTime()<<"\n";
+            ////EV<<"Database no pending job: "<<simTime()<<"\n";
             scheduleAt(simTime()+1.5, msg);
         }else{
-            EV<<"Shut down slave: "<<simTime()<<"\n";
+            ////EV<<"Shut down slave: "<<simTime()<<"\n";
             cancelAndDelete(msg);
         }
     }

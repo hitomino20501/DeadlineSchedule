@@ -12,7 +12,7 @@
 struct Job{
     struct User* user;
     int jobIndex = 0;
-    int totalFrame = 150;
+    int totalFrame = 800;
     std::vector<Task> taskVector;
     int renderingFrame = 0;
     int errorFrame = 0;
