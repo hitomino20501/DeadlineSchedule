@@ -36,6 +36,7 @@ class Database : public cSimpleModule{
         double denominator = 0.0;
         double totalSlave = 100.0;
         simtime_t DAY = 50.0;
+        int totalWorker = 100;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
         void generateColor(std::queue<std::string> *colorQueue);
@@ -340,6 +341,18 @@ void Database::handleMessage(cMessage *msg){
                     scheduleAt(simTime()+0.5, noDispatchJob);
                 }
             }
+            else{
+                if(logFlag<4){
+                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                    scheduleAt(simTime()+0.5, noDispatchJob);
+                }else{
+                    // Ãö±¼slave
+                    Dispatch *shutDown = new Dispatch("shutDown");
+                    shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
+                    scheduleAt(simTime()+0.5, shutDown);
+                }
+            }
         }else if(msgKind==WorkerState::SUBMIT_JOB){
             EV<<"Database receive a message from workstation: "<<simTime()<<"\n";
             EV<<"Message type: SUBMIT_JOB\n";
@@ -352,13 +365,17 @@ void Database::handleMessage(cMessage *msg){
             limitSearchUser++;*/
             struct Job job;
             Dispatch *submitJob = check_and_cast<Dispatch *>(msg);
-            job = submitJob->getJob();
+            int jobVectorIndex = submitJob->getJob().jobVectorIndex;
+            int jobIndex = submitJob->getJob().jobIndex;
+            job = &jobVector[jobVectorIndex].at(jobIndex);
+            //job = submitJob->getJob();
             userVector[job.user->userIndex].totalJob++;
             queueableJob++;
             // ­«­nlog
             /*EV<<"userIndex:"<<job.user->userIndex<<"\n";
             EV<<"userTotalJob:"<<userVector[job.user->userIndex].totalJob<<"\n";
             EV<<"queueableJob:"<<queueableJob<<"\n";*/
+            job.queueTime = simTime();
             /*int index = 0;
             denominator = 0;
             for (auto it = userVector.begin(); it != userVector.end(); ++it){

@@ -22,6 +22,7 @@ public:
     std::vector<std::vector<int>>& getWorkflowHierarchy();
     std::vector<std::vector<int>>& getUserWorkflow();
     void clearVector();
+    std::vector<int>& getWorkerState();
 private:
     std::queue<std::vector<Job>> jobQueue;
     std::queue<std::string> colorQueue;
@@ -30,6 +31,7 @@ private:
     std::vector<int> hierarchy;
     std::vector<std::vector<int>> workflowHierarchy;
     std::vector<std::vector<int>> adj;
+    std::vector<int> workerState;
     int PW = 1;
     int EW = 0;
     int SW = 0;
