@@ -35,6 +35,7 @@ class Database : public cSimpleModule{
         int limitSearchUser = 0;
         double denominator = 0.0;
         double totalSlave = 100.0;
+        simtime_t DAY = 100.0;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
         void generateColor(std::queue<std::string> *colorQueue);
@@ -94,12 +95,12 @@ void Database::initialize(){
     Dispatch *msg = new Dispatch("log");
     msg->setKind(WorkerState::LOG_TIMER);
     msg->setSchedulingPriority(10);
-    scheduleAt(1.0, msg);
+    scheduleAt(0.0, msg);
 
     Dispatch *statistics = new Dispatch("statistics");
     statistics->setKind(WorkerState::STATISTICS);
     statistics->setSchedulingPriority(11);
-    scheduleAt(50.0, statistics);
+    scheduleAt(DAY, statistics);
 
     // 以下省略 改用workstation送出工作 舊版 以廢棄
     /*queueableJob = totalUser * eachUserJob;
@@ -169,38 +170,46 @@ void Database::handleMessage(cMessage *msg){
 
         }
         else if(msgKind==WorkerState::STATISTICS){
-            int i = 0;
             simtime_t totalTime = 0.0;
-            for (auto it = jobVector[0].begin(); it != jobVector[0].end(); ++it){
-                if(i==userVector[0].totalJob){
-                    break;
-                }
-                i++;
-                for(int j=0;j<(*it).taskVector.size();j++){
-                    if((*it).taskVector[j].isDispatch==true){
-                        if((*it).taskVector[j].isFinish==true){
-                            if(((*it).taskVector[j].startTime>=simTime()-50.0) && ((*it).taskVector[j].finisdTime<simTime())){
-                                totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+            for(int index=0;index<jobVector.size();index++){
+                int i = 0;
+                totalTime = 0.0;
+                for (auto it = jobVector[index].begin(); it != jobVector[index].end(); ++it){
+                    if(i==userVector[index].totalJob){
+                        break;
+                    }
+                    i++;
+                    for(int j=0;j<(*it).taskVector.size();j++){
+                        if((*it).taskVector[j].isDispatch==true){
+                            if((*it).taskVector[j].isFinish==true){
+                                if(((*it).taskVector[j].startTime>=simTime()-DAY) && ((*it).taskVector[j].finisdTime<simTime())){
+                                    totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+                                }
+                            }
+                            else{
+                                totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
+                                (*it).taskVector[j].startTime = simTime();
                             }
                         }
-                        else{
+                        /*if(((*it).taskVector[j].finisdTime==0) && ((*it).taskVector[j].isDispatch==true) && ((*it).taskVector[j].startTime<simTime())){
                             totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
-                            (*it).taskVector[j].startTime = simTime();
                         }
+                        else{
+                            totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
+                        }*/
+                        //totalTime = totalTime + (*it).taskVector[j].renderTime;
                     }
-                    /*if(((*it).taskVector[j].finisdTime==0) && ((*it).taskVector[j].isDispatch==true) && ((*it).taskVector[j].startTime<simTime())){
-                        totalTime = totalTime + (simTime()-(*it).taskVector[j].startTime);
-                    }
-                    else{
-                        totalTime = totalTime + ((*it).taskVector[j].finisdTime-(*it).taskVector[j].startTime);
-                    }*/
-                    //totalTime = totalTime + (*it).taskVector[j].renderTime;
                 }
+                //EV<<"simTime: "<<simTime()<<" user"<<index<<" totalTime :"<<totalTime<<"\n";
+                EV<<"{";
+                EV<<"'simTimeDay':"<<simTime()<<",";
+                EV<<"'userNameDay':'"<<index<<"',";
+                EV<<"'totalTimeDay':"<<totalTime;
+                EV<<"}\n";
             }
-            EV<<"simTime: "<<simTime()<<"totalTime :"<<totalTime<<"\n";
             if(logFlag<4){
                 totalTime = 0.0;
-                scheduleAt(simTime()+50.0, msg);
+                scheduleAt(simTime()+DAY, msg);
             }else{
                 cancelAndDelete(msg);
             }
@@ -238,18 +247,18 @@ void Database::handleMessage(cMessage *msg){
                 }else{
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime()+0.5, noDispatchJob);
+                    scheduleAt(simTime(), noDispatchJob);
                 }
             }else{
                 if(logFlag<4){
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime()+0.5, noDispatchJob);
+                    scheduleAt(simTime(), noDispatchJob);
                 }else{
                     // 關掉slave
                     Dispatch *shutDown = new Dispatch("shutDown");
                     shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
-                    scheduleAt(simTime()+0.5, shutDown);
+                    scheduleAt(simTime(), shutDown);
                 }
             }
         }
@@ -336,7 +345,19 @@ void Database::handleMessage(cMessage *msg){
                 }else{
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime()+0.5, noDispatchJob);
+                    scheduleAt(simTime(), noDispatchJob);
+                }
+            }
+            else{
+                if(logFlag<4){
+                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                    scheduleAt(simTime(), noDispatchJob);
+                }else{
+                    // 關掉slave
+                    Dispatch *shutDown = new Dispatch("shutDown");
+                    shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
+                    scheduleAt(simTime(), shutDown);
                 }
             }
         }else if(msgKind==WorkerState::SUBMIT_JOB){
@@ -596,7 +617,7 @@ void Database::dispatchJob(User* user, Job* job, int dest){
     dispatchJob->setJob(*job);
 
     // 模擬處理請求時間
-    scheduleAt(simTime()+0.5, dispatchJob);
+    scheduleAt(simTime(), dispatchJob);
 }
 
 bool Database::isQueueHasJob(){
