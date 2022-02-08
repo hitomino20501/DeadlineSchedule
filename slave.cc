@@ -27,7 +27,7 @@ void Slave::initialize(){
     Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::REQUEST_JOB);
     // 延遲 2秒
-    scheduleAt(1.0, msg);
+    scheduleAt(0.0, msg);
 }
 
 void Slave::handleMessage(cMessage *msg){
@@ -78,7 +78,7 @@ void Slave::handleMessage(cMessage *msg){
             // 完成render 發送訊息給server
             renderColor = true;
             //simtime_t renderTime = round(par("delayTime"));
-            simtime_t renderTime = 8.9;
+            simtime_t renderTime = 9.8;
             for (auto it = job->taskVector.begin(); it != job->taskVector.end(); ++it){
                 if(((*it).slaveId == senderGate) && (!(*it).isFinish)){
                     (*it).renderTime = renderTime;
@@ -88,7 +88,7 @@ void Slave::handleMessage(cMessage *msg){
             scheduleAt(simTime()+renderTime, msg);
         }else if(msgKind==WorkerState::NO_Dispatch_JOB){
             ////EV<<"Database no pending job: "<<simTime()<<"\n";
-            scheduleAt(simTime()+1.5, msg);
+            scheduleAt(simTime()+1.0, msg);
         }else{
             ////EV<<"Shut down slave: "<<simTime()<<"\n";
             cancelAndDelete(msg);

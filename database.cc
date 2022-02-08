@@ -95,7 +95,7 @@ void Database::initialize(){
     Dispatch *msg = new Dispatch("log");
     msg->setKind(WorkerState::LOG_TIMER);
     msg->setSchedulingPriority(10);
-    scheduleAt(1.0, msg);
+    scheduleAt(0.0, msg);
 
     Dispatch *statistics = new Dispatch("statistics");
     statistics->setKind(WorkerState::STATISTICS);
@@ -200,7 +200,12 @@ void Database::handleMessage(cMessage *msg){
                         //totalTime = totalTime + (*it).taskVector[j].renderTime;
                     }
                 }
-                EV<<"simTime: "<<simTime()<<" user"<<index<<" totalTime :"<<totalTime<<"\n";
+                //EV<<"simTime: "<<simTime()<<" user"<<index<<" totalTime :"<<totalTime<<"\n";
+                EV<<"{";
+                EV<<"'simTimeDay':"<<simTime()<<",";
+                EV<<"'userNameDay':'"<<index<<"',";
+                EV<<"'totalTimeDay':"<<totalTime;
+                EV<<"}\n";
             }
             // 重制每位user能使用的量
             for (auto it = userVector.begin(); it != userVector.end(); ++it){
@@ -246,18 +251,18 @@ void Database::handleMessage(cMessage *msg){
                 }else{
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime()+0.5, noDispatchJob);
+                    scheduleAt(simTime(), noDispatchJob);
                 }
             }else{
                 if(logFlag<4){
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime()+0.5, noDispatchJob);
+                    scheduleAt(simTime(), noDispatchJob);
                 }else{
                     // 關掉slave
                     Dispatch *shutDown = new Dispatch("shutDown");
                     shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
-                    scheduleAt(simTime()+0.5, shutDown);
+                    scheduleAt(simTime(), shutDown);
                 }
             }
         }
@@ -349,7 +354,19 @@ void Database::handleMessage(cMessage *msg){
                 }else{
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime()+0.5, noDispatchJob);
+                    scheduleAt(simTime(), noDispatchJob);
+                }
+            }
+            else{
+                if(logFlag<4){
+                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                    scheduleAt(simTime(), noDispatchJob);
+                }else{
+                    // 關掉slave
+                    Dispatch *shutDown = new Dispatch("shutDown");
+                    shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
+                    scheduleAt(simTime(), shutDown);
                 }
             }
         }else if(msgKind==WorkerState::SUBMIT_JOB){
@@ -449,6 +466,11 @@ User& Database::findDispatchUser(){
             break;
         }*/
         if(!isAllJobFinisd((*it).userIndex)){
+            EV<<"{";
+            EV<<"'simTime1':"<<simTime()<<",";
+            EV<<"'userName1':'"<<(*it).name<<"',";
+            EV<<"'weight1':"<<(*it).userWeight;
+            EV<<"}\n";
             //proportionVector.push_back(*it);
             if((*it).userWeight > max){
                 max = (*it).userWeight;
@@ -567,7 +589,7 @@ void Database::dispatchJob(User* user, Job* job, int dest){
     dispatchJob->setJob(*job);
 
     // 模擬處理請求時間
-    scheduleAt(simTime()+0.5, dispatchJob);
+    scheduleAt(simTime(), dispatchJob);
 }
 
 bool Database::isQueueHasJob(){
