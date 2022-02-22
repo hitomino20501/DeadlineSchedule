@@ -476,6 +476,9 @@ User& Database::findDispatchUser(){
             (*it).limitUserWeight = (int)round(tempWeight);
             //(*it).userWeight = (int)round(tempWeight);
             (*it).priority = (int)round(tempWeight);
+            if(simTime()-(*it).lastFinishTaskTime>10){
+
+            }
             (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
         }
         else{
