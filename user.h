@@ -22,7 +22,9 @@ struct User{
     int denominator = 0;
     int proportion = 0;
     int limitUserWeight = -1;
+    int increase = 0;
     omnetpp::simtime_t lastFinishTaskTime = 0;
+    omnetpp::simtime_t lastIncreaseTime = 0;
     std::string userColor;
 };
 

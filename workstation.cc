@@ -24,6 +24,7 @@ class Workstation : public cSimpleModule{
         int RB = 0;
         int RW = -1;*/
         int countUser = 0;
+        int countJob = 0;
         //void generateColor();
         //void generateJob(User &user);
     protected:
@@ -124,6 +125,10 @@ void Workstation::initialize(){
     msg->setKind(WorkerState::SUBMIT_JOB);
     scheduleAt(0, msg);
 
+    Dispatch *msg1 = new Dispatch("hello");
+    msg1->setKind(WorkerState::SUBMIT_JOB);
+    scheduleAt(100, msg1);
+
     // ²£¥Íjob
     /*int jobIndex = 0;
     for(int i=0;i<totalUser;i++){
@@ -155,8 +160,21 @@ void Workstation::handleMessage(cMessage *msg){
             send(submitJob, "out");
             countUser++;*/
             struct Job job;
-            if(countUser<totalUser*eachUserJob){
-                job.user = &userVector[countUser%totalUser];
+            if(simTime()<100.0){
+                if(countUser<totalUser*eachUserJob){
+                    if(countUser%totalUser!=0){
+                        job.user = &userVector[countUser%totalUser];
+                    }
+                    else{
+                        countUser++;
+                        job.user = &userVector[countUser%totalUser];
+                    }
+                }
+            }
+            else{
+                if(countJob<eachUserJob){
+                    job.user = &userVector[0];
+                }
             }
             /*if(countUser<userVector.size()){
                 job.user = &userVector[countUser];
@@ -169,7 +187,12 @@ void Workstation::handleMessage(cMessage *msg){
             submitJob->setSchedulingPriority(1);
             submitJob->setJob(job);
             send(submitJob, "out");
-            countUser++;
+            if(simTime()<100.0){
+                countUser++;
+            }
+            else{
+                countJob++;
+            }
             /*for (auto it = userVector.begin(); it != userVector.end(); ++it){
                 EV<<"{";
                 EV<<"'simTime':"<<simTime()<<",";
@@ -201,13 +224,25 @@ void Workstation::handleMessage(cMessage *msg){
             scheduleAt(simTime()+100.0, msg);
         }
          * */
-        if(countUser<totalUser*eachUserJob){
-            msg->setSchedulingPriority(1);
-            scheduleAt(simTime()+0.5, msg);
+        if(simTime()<100.0){
+            if(countUser<totalUser*eachUserJob){
+                msg->setSchedulingPriority(1);
+                scheduleAt(simTime()+0.5, msg);
+            }
+            else{
+                cancelAndDelete(msg);
+            }
         }
         else{
-            cancelAndDelete(msg);
+            if(countJob<eachUserJob){
+                msg->setSchedulingPriority(1);
+                scheduleAt(simTime()+0.5, msg);
+            }
+            else{
+                cancelAndDelete(msg);
+            }
         }
+
         /*if(countUser<userVector.size()){
             msg->setSchedulingPriority(1);
             scheduleAt(simTime()+1.5, msg);

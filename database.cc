@@ -283,6 +283,7 @@ void Database::handleMessage(cMessage *msg){
             user->userFinishFrame = user->userFinishFrame + 1;
             user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
             //user->userWeight = user->userWeight - 1;
+            user->lastFinishTaskTime = simTime();
 
             // §ó·sjob
             job->renderingFrame = job->renderingFrame - 1;
@@ -476,15 +477,47 @@ User& Database::findDispatchUser(){
             (*it).limitUserWeight = (int)round(tempWeight);
             //(*it).userWeight = (int)round(tempWeight);
             (*it).priority = (int)round(tempWeight);
-            if(simTime()-(*it).lastFinishTaskTime>10){
-
+            simtime_t tempTime = simTime()-(*it).lastFinishTaskTime;
+            if(tempTime>80.0 && (*it).userRenderingFrame<1){
+                (*it).increase = (int)floor(tempTime.dbl()*0.1);
+                EV<<"increase: "<<(*it).increase<<"\n";
+                (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW)+(*it).increase;
+                (*it).lastIncreaseTime = simTime();
             }
-            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
+            else{
+                (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW)+(*it).increase;
+                simtime_t tempTime1 = simTime()-(*it).lastIncreaseTime;
+                if((int)floor(tempTime1.dbl()*0.1)>(*it).increase){
+                    (*it).userWeight = (*it).userWeight - ((int)floor(tempTime1.dbl()*0.1));
+                }
+                else{
+                    (*it).userWeight = (*it).userWeight - (*it).increase;
+                }
+            }
         }
         else{
             //(*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
             (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
-            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
+            simtime_t tempTime = simTime()-(*it).lastFinishTaskTime;
+            if(tempTime>80.0 && (*it).userRenderingFrame<1){
+                (*it).increase = (int)floor(tempTime.dbl()*0.1);
+                EV<<"increaseElse: "<<(*it).increase<<"\n";
+                (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW)+(*it).increase;
+                EV<<"increaseElseuserWeight: "<<(*it).userWeight<<"\n";
+                (*it).lastIncreaseTime = simTime();
+            }
+            else{
+                (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW)+(*it).increase;
+                simtime_t tempTime1 = simTime()-(*it).lastIncreaseTime;
+                if((int)floor(tempTime1.dbl()*0.1)<(*it).increase){
+                    //(*it).userWeight = (*it).userWeight - ((int)tempTime1.dbl()*0.05);
+                    (*it).userWeight = (*it).userWeight - 0;
+                }
+                else{
+                    (*it).userWeight = (*it).userWeight - (*it).increase;
+                }
+            }
+            //(*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
             (*it).limitUserWeight = (int)round(tempWeight);
         }
         //EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
