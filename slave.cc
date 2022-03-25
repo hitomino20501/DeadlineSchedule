@@ -77,8 +77,8 @@ void Slave::handleMessage(cMessage *msg){
             // 設定render時間
             // 完成render 發送訊息給server
             renderColor = true;
-            simtime_t renderTime = 9.8;
-            //simtime_t renderTime = round(par("delayTime"));
+            //simtime_t renderTime = 9.8;
+            simtime_t renderTime = round(par("delayTime"));
             for (auto it = job->taskVector.begin(); it != job->taskVector.end(); ++it){
                 if(((*it).slaveId == senderGate) && (!(*it).isFinish)){
                     (*it).renderTime = renderTime;

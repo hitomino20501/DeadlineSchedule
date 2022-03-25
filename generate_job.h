@@ -17,6 +17,7 @@ class GenerateJob{
 public:
     static GenerateJob& getInstance();
     std::vector<User>& getAllUser();
+    std::vector<Job>& getAllJobs();
     std::vector<std::vector<Job>>& getAllJob();
     std::vector<int>& getHierarchy();
     std::vector<std::vector<int>>& getWorkflowHierarchy();
@@ -24,6 +25,7 @@ public:
     void clearVector();
 private:
     std::queue<std::vector<Job>> jobQueue;
+    std::vector<Job> jobQueueEX;
     std::queue<std::string> colorQueue;
     std::vector<User> userVector;
     std::vector<std::vector<Job>> jobVector;

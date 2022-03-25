@@ -23,6 +23,7 @@ class Database : public cSimpleModule{
         std::queue<std::string> colorQueue;
         //std::vector<User> userVector;
         std::vector<User>& userVector = GenerateJob::getInstance().getAllUser();
+        std::vector<Job>& jobVectorEX = GenerateJob::getInstance().getAllJobs();
         std::vector<std::vector<int>>& adj = GenerateJob::getInstance().getUserWorkflow();
         int PW = 1;
         int EW = 0;
@@ -97,10 +98,10 @@ void Database::initialize(){
     msg->setSchedulingPriority(10);
     scheduleAt(0.0, msg);
 
-    Dispatch *statistics = new Dispatch("statistics");
+    /*Dispatch *statistics = new Dispatch("statistics");
     statistics->setKind(WorkerState::STATISTICS);
     statistics->setSchedulingPriority(11);
-    scheduleAt(DAY, statistics);
+    scheduleAt(DAY, statistics);*/
 
     // 以下省略 改用workstation送出工作 舊版 以廢棄
     /*queueableJob = totalUser * eachUserJob;
@@ -235,32 +236,58 @@ void Database::handleMessage(cMessage *msg){
             // 刪除自worker的cMessage訊息
             delete msg;
 
-            if(isQueueHasJob()){
+
                 // 取出vector中weight最大的job
                 // 改成取出vector中weight最大的user
-                struct User* user;
+                for (auto it = jobVectorEX.begin(); it != jobVectorEX.end(); ++it){
+                    (*it).weight = ((*it).user->priority * PW)+((*it).renderingFrame * RW);
+                    //EV<<"weight: "<<(*it).weight<<"\n";
+                }
+
+                int wMax = -10000;
+                int wIndex = -1;
+                for (auto it = jobVectorEX.begin(); it != jobVectorEX.end(); ++it){
+                    if((*it).renderingFrame+(*it).finishFrame<(*it).totalFrame){
+                        if((*it).weight>wMax){
+                            wMax = (*it).weight;
+                            wIndex = (*it).jobIndexEX;
+                        }
+                    }
+                }
+                EV<<"wIndex: "<<wIndex<<"\n";
                 struct Job* job;
-                user = &findDispatchUser();
-                job = findDispatchJob(user);
-                if(job!=nullptr){
-                    dispatchJob(user, job, dest);
-                }else{
+                struct User* user;
+                if (wIndex!=-1){
+
+                    job = &jobVectorEX[wIndex];
+                    user = &userVector.at(job->user->userIndex);
+                    EV<<"userIndex: "<<job->user->userIndex<<"\n";
+                    if(!job->isActivate){
+                        user->renderingJob = user->renderingJob + 1;
+                        job->isActivate = true;
+                    }
+                    user->userRenderingFrame = user->userRenderingFrame+1;
+                    user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
+
+                    // 更新job狀態
+                    job->renderingFrame = job->renderingFrame + 1;
+
+
+                    // 新增一個Dispatch訊息
+                    Dispatch *dispatchJob = new Dispatch("dispatchJob");
+                    dispatchJob->setKind(WorkerState::Dispatch_JOB);
+                    dispatchJob->setJob(*job);
+
+                    // 模擬處理請求時間
+                    scheduleAt(simTime(), dispatchJob);
+                }
+                else{
                     Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
                     noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
                     scheduleAt(simTime(), noDispatchJob);
                 }
-            }else{
-                if(logFlag<4){
-                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
-                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime(), noDispatchJob);
-                }else{
-                    // 關掉slave
-                    Dispatch *shutDown = new Dispatch("shutDown");
-                    shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
-                    scheduleAt(simTime(), shutDown);
-                }
-            }
+
+
         }
         else if(msgKind==WorkerState::FRAME_SUCCEEDED){
             EV<<"Database receive a message from worker["<<dest<<"]: "<<simTime()<<"\n";
@@ -270,13 +297,13 @@ void Database::handleMessage(cMessage *msg){
             Dispatch *receiveJob = check_and_cast<Dispatch *>(msg);
             int userIndex = receiveJob->getJob().user->userIndex;
             int jobVectorIndex = receiveJob->getJob().jobVectorIndex;
-            int jobIndex = receiveJob->getJob().jobIndex;
+            int jobIndex = receiveJob->getJob().jobIndexEX;
             delete receiveJob;
 
             struct User* user;
             struct Job* job;
             user = &userVector.at(userIndex);
-            job = &jobVector[jobVectorIndex].at(jobIndex);
+            job = &jobVectorEX.at(jobIndex);
 
             // 更新user
             user->userRenderingFrame = user->userRenderingFrame - 1;
@@ -287,16 +314,6 @@ void Database::handleMessage(cMessage *msg){
             // 更新job
             job->renderingFrame = job->renderingFrame - 1;
             job->finishFrame = job->finishFrame + 1;
-            for (auto it = job->taskVector.begin(); it != job->taskVector.end(); ++it){
-                if(((*it).slaveId == dest) && (!(*it).isFinish)){
-                    (*it).isFinish = true;
-                    (*it).finisdTime = simTime();
-                    /*EV<<"Frame start: "<<(*it).startTime<<"\n";
-                    EV<<"Frame render: "<<(*it).renderTime<<"\n";
-                    EV<<"Frame finish: "<<(*it).finisdTime<<"\n";*/
-                    break;
-                }
-            }
 
             // 檢查job是否完成
             if(job->finishFrame==job->totalFrame){
@@ -305,61 +322,56 @@ void Database::handleMessage(cMessage *msg){
                 user->renderingJob = user->renderingJob - 1;
                 user->finishJob = user->finishJob + 1;
                 queueableJob--;
-                /*if(user->userIndex==0){
-                    cMessage *drawNode = new cMessage("drawNode");
-                    drawNode->setKind(WorkerState::JOB_FINISH);
-                    cModule *node = getParentModule()->getSubmodule("node", job->jobIndex);
-                    sendDirect(drawNode, node, "in", 0);
-                }*/
-                /*if(user->finishJob == user->totalJob){
-                    EV<<user->name<<"finisd all job\n";
-                    denominator = denominator - user->proportion;
-                    double tempWeight = 0.0;
-                    int index = 0;
-                    for (auto it = userVector.begin(); it != userVector.end(); ++it){
-                        if(index==limitSearchUser){
-                            break;
-                        }
-                        if((*it).finishJob == (*it).totalJob){
-                            EV<<(*it).name<<":"<<"continue"<<"\n";
-                            continue;
-                        }
-                        EV<<(*it).name<<":denominator:"<<denominator<<"\n";
-                        EV<<(*it).name<<":proportion:"<<(*it).proportion<<"\n";
-                        tempWeight = totalSlave*((*it).proportion/denominator);
-                        EV<<(*it).name<<":"<<tempWeight<<"\n";
-                        (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
-                        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
-                        (*it).limitUserWeight = (int)round(tempWeight);
-                        index++;
-                    }
-                }*/
             }
 
             // 再從queue中選擇一個合適的工作
-            if(isQueueHasJob()){
-                user = &findDispatchUser();
-                job = findDispatchJob(user);
-                if(job!=nullptr){
-                    dispatchJob(user, job, dest);
-                }else{
-                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
-                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime(), noDispatchJob);
+            for (auto it = jobVectorEX.begin(); it != jobVectorEX.end(); ++it){
+                (*it).weight = ((*it).user->priority * PW)+((*it).renderingFrame * RW);
+                //EV<<"weight: "<<(*it).weight<<"\n";
+            }
+
+            int wMax = -10000;
+            int wIndex = -1;
+            for (auto it = jobVectorEX.begin(); it != jobVectorEX.end(); ++it){
+                if((*it).renderingFrame+(*it).finishFrame<(*it).totalFrame){
+                    if((*it).weight>wMax){
+                        wMax = (*it).weight;
+                        wIndex = (*it).jobIndexEX;
+                    }
                 }
+            }
+            EV<<"wIndex: "<<wIndex<<"\n";
+
+            if (wIndex!=-1){
+
+                job = &jobVectorEX[wIndex];
+                user = &userVector.at(job->user->userIndex);
+                EV<<"userIndex: "<<job->user->userIndex<<"\n";
+                if(!job->isActivate){
+                    user->renderingJob = user->renderingJob + 1;
+                    job->isActivate = true;
+                }
+                user->userRenderingFrame = user->userRenderingFrame+1;
+                user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
+
+                // 更新job狀態
+                job->renderingFrame = job->renderingFrame + 1;
+
+
+                // 新增一個Dispatch訊息
+                Dispatch *dispatchJob = new Dispatch("dispatchJob");
+                dispatchJob->setKind(WorkerState::Dispatch_JOB);
+                dispatchJob->setJob(*job);
+
+                // 模擬處理請求時間
+                scheduleAt(simTime(), dispatchJob);
             }
             else{
-                if(logFlag<4){
-                    Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
-                    noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
-                    scheduleAt(simTime(), noDispatchJob);
-                }else{
-                    // 關掉slave
-                    Dispatch *shutDown = new Dispatch("shutDown");
-                    shutDown->setKind(WorkerState::SHUT_DOWN_SLAVE);
-                    scheduleAt(simTime(), shutDown);
-                }
+                Dispatch *noDispatchJob = new Dispatch("noDispatchJob");
+                noDispatchJob->setKind(WorkerState::NO_Dispatch_JOB);
+                scheduleAt(simTime(), noDispatchJob);
             }
+
         }else if(msgKind==WorkerState::SUBMIT_JOB){
             EV<<"Database receive a message from workstation: "<<simTime()<<"\n";
             EV<<"Message type: SUBMIT_JOB\n";

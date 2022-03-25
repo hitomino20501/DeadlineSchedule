@@ -12,6 +12,7 @@
 struct Job{
     struct User* user;
     int jobIndex = 0;
+    int jobIndexEX = 0;
     int totalFrame = 300;
     std::vector<Task> taskVector;
     int renderingFrame = 0;
@@ -21,6 +22,7 @@ struct Job{
     int jobVectorIndex = 0;
     bool isJobFinish = false;
     bool isActivate = false;
+    int priority = 0;
     std::string jobColor;
     omnetpp::simtime_t startTime = 0;
     omnetpp::simtime_t finisdTime = 0;
