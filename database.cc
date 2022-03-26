@@ -35,7 +35,7 @@ class Database : public cSimpleModule{
         int logFlag = 0;
         int limitSearchUser = 0;
         double denominator = 0.0;
-        double totalSlave = 100.0;
+        double totalSlave = 50.0;
         simtime_t DAY = 100.0;
         User& findDispatchUser();
         Job* findDispatchJob(User *user);
@@ -255,6 +255,18 @@ void Database::handleMessage(cMessage *msg){
                     }
                 }
                 EV<<"wIndex: "<<wIndex<<"\n";
+                int rMin = 10000;
+                for (auto it = jobVectorEX.begin(); it != jobVectorEX.end(); ++it){
+                    if((*it).renderingFrame+(*it).finishFrame<(*it).totalFrame){
+                        if((*it).weight==wMax){
+                            if((*it).renderingFrame<rMin){
+                                rMin = (*it).renderingFrame;
+                                wIndex = (*it).jobIndexEX;
+                            }
+                        }
+                    }
+                }
+                EV<<"wIndexBalence: "<<wIndex<<"\n";
                 struct Job* job;
                 struct User* user;
                 if (wIndex!=-1){
@@ -341,6 +353,18 @@ void Database::handleMessage(cMessage *msg){
                 }
             }
             EV<<"wIndex: "<<wIndex<<"\n";
+            int rMin = 10000;
+            for (auto it = jobVectorEX.begin(); it != jobVectorEX.end(); ++it){
+                if((*it).renderingFrame+(*it).finishFrame<(*it).totalFrame){
+                    if((*it).weight==wMax){
+                        if((*it).renderingFrame<rMin){
+                            rMin = (*it).renderingFrame;
+                            wIndex = (*it).jobIndexEX;
+                        }
+                    }
+                }
+            }
+            EV<<"wIndexBalence: "<<wIndex<<"\n";
 
             if (wIndex!=-1){
 
