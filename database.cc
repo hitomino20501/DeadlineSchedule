@@ -10,7 +10,7 @@
 #include "dispatch_m.h"
 #include "generate_job.h"
 #define totalUser 4
-#define eachUserJob 3
+#define eachUserJob 10
 
 using namespace omnetpp;
 
@@ -54,86 +54,18 @@ class Database : public cSimpleModule{
 Define_Module(Database);
 
 void Database::initialize(){
-    jobVector.reserve(100);
-    balancedVector.reserve(100);
-
-    /*struct Job job;
-    struct User user;
-    generateColor(&colorQueue);
-    userVector.reserve(totalUser);
-    int pr[totalUser]={10, 11, 15, 20};
-    int userIndex = 0;
-    for(int i=0;i<totalUser;i++){
-        user.name = "User"+std::to_string(i);
-        user.priority = pr[i];
-        user.userIndex = userIndex;
-        user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
-        user.userColor = colorQueue.front();
-        userVector.push_back(user);
-        userIndex++;
-        colorQueue.push(colorQueue.front());
-        colorQueue.pop();
-    }
-
-    std::vector<Job> temJob;
-
-    int jobIndex = 0;
-    for(int i=0;i<totalUser;i++){
-        for(int j=0;j<eachUserJob;j++){
-            job.user = &userVector[i];
-            job.jobIndex = jobIndex;
-            jobIndex++;
-            temJob.push_back(job);
-            queueableJob++;
-            userVector[i].totalJob = userVector[i].totalJob+1;
-        }
-        jobVector.push_back(temJob);
-        jobIndex = 0;
-        temJob.clear();
-    }*/
+    /*jobVector.reserve(100);
+    balancedVector.reserve(100);*/
 
     Dispatch *msg = new Dispatch("log");
     msg->setKind(WorkerState::LOG_TIMER);
     msg->setSchedulingPriority(10);
     scheduleAt(0.0, msg);
 
-    Dispatch *statistics = new Dispatch("statistics");
+    /*Dispatch *statistics = new Dispatch("statistics");
     statistics->setKind(WorkerState::STATISTICS);
     statistics->setSchedulingPriority(11);
-    scheduleAt(DAY, statistics);
-
-    // 以下省略 改用workstation送出工作 舊版 以廢棄
-    /*queueableJob = totalUser * eachUserJob;
-    jobVector.reserve(queueableJob);
-
-    generateColor(&colorQueue);
-
-    // 新增User Job
-    // User userList[totalUser] = {{"A",10}, {"B",20}, {"C",30}, {"D",40}};
-    int pr[4]={20, 15, 11, 10};
-    User userList[totalUser];
-    int userPriority = 10;
-    for(int i=0;i<totalUser;i++){
-        userList[i].name = "User"+std::to_string(i);
-        userList[i].priority = pr[i];
-        //userList[i].priority = userPriority;
-        //userPriority = userPriority+5;
-    }
-
-    int jobIndex = 0;
-    for(int i=0;i<totalUser;i++){
-        for(int j=0;j<eachUserJob;j++){
-            job.user = userList[i];
-            job.jobIndex = jobIndex;
-            job.weight = (job.user.priority * PW)+(job.errorFrame * EW)+(0 * SW)+((job.renderingFrame - RB) * RW);
-            job.jobColor = colorQueue.front();
-            jobIndex++;
-            jobVector.push_back(job);
-        }
-        EV<<"color: "<<colorQueue.front()<<"\n";
-        colorQueue.push(colorQueue.front());
-        colorQueue.pop();
-    }*/
+    scheduleAt(DAY, statistics);*/
 }
 
 void Database::handleMessage(cMessage *msg){
