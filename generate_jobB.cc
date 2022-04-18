@@ -2,7 +2,7 @@
 #include <queue>
 #include <random>
 #include <algorithm>
-#include "generate_job.h"
+#include "generate_jobB.h"
 #include "user.h"
 #include "job.h"
 #include "task.h"
@@ -11,7 +11,7 @@
 
 using namespace omnetpp;
 
-GenerateJob::GenerateJob(){
+GenerateJobB::GenerateJobB(){
     generateColor();
 
     struct Job job;
@@ -65,40 +65,25 @@ GenerateJob::GenerateJob(){
     }
 }
 
-GenerateJob& GenerateJob::getInstance(){
-    static GenerateJob instance;
+GenerateJobB& GenerateJobB::getInstance(){
+    static GenerateJobB instance;
     return instance;
 }
 
-std::vector<User>& GenerateJob::getAllUser(){
+std::vector<User>& GenerateJobB::getAllUser(){
     return userVector;
 }
 
-std::vector<std::vector<Job>>& GenerateJob::getAllJob(){
+std::vector<std::vector<Job>>& GenerateJobB::getAllJob(){
     return jobVector;
 }
 
-std::vector<int>& GenerateJob::getHierarchy(){
-    return hierarchy;
-}
-
-std::vector<std::vector<int>>& GenerateJob::getWorkflowHierarchy(){
-    return workflowHierarchy;
-}
-
-std::vector<std::vector<int>>& GenerateJob::getUserWorkflow(){
-    return adj;
-}
-
-void GenerateJob::clearVector(){
+void GenerateJobB::clearVector(){
     userVector.clear();
     jobVector.clear();
-    hierarchy.clear();
-    workflowHierarchy.clear();
-    adj.clear();
 }
 
-void GenerateJob::generateColor(){
+void GenerateJobB::generateColor(){
     colorQueue.push("darkorange");
     colorQueue.push("magenta");
     colorQueue.push("lightskyblue");
@@ -130,3 +115,4 @@ void GenerateJob::generateColor(){
     colorQueue.push("navy");
     colorQueue.push("indigo");
 }
+
