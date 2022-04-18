@@ -18,12 +18,16 @@ public:
     static GenerateJobB& getInstance();
     std::vector<User>& getAllUser();
     std::vector<std::vector<Job>>& getAllJob();
+    std::vector<int>& getFarmCredit();
+    std::vector<int>& getSlaveState();
     void clearVector();
 private:
     std::queue<std::vector<Job>> jobQueue;
     std::queue<std::string> colorQueue;
     std::vector<User> userVector;
     std::vector<std::vector<Job>> jobVector;
+    std::vector<int> farmCredit;
+    std::vector<int> slaveState;
     int PW = 1;
     int EW = 0;
     int SW = 0;

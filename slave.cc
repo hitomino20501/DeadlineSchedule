@@ -7,6 +7,7 @@
 #include "state.h"
 #include "dispatch_m.h"
 #include "generate_job.h"
+#include "generate_jobB.h"
 #include "user.h"
 #include "job.h"
 #define totalUser 4
@@ -24,8 +25,12 @@ class Slave : public cSimpleModule{
         double denominator = 0.0;
         double totalSlave = 100.0;
 
-        std::vector<User>& userVector = GenerateJob::getInstance().getAllUser();
-        std::vector<std::vector<Job>>& jobVector = GenerateJob::getInstance().getAllJob();
+        std::vector<User>& userVectorA = GenerateJob::getInstance().getAllUser();
+        std::vector<std::vector<Job>>& jobVectorA = GenerateJob::getInstance().getAllJob();
+        std::vector<int>& farmCreditA = GenerateJob::getInstance().getFarmCredit();
+        std::vector<User>& userVectorB = GenerateJobB::getInstance().getAllUser();
+        std::vector<std::vector<Job>>& jobVectorB = GenerateJobB::getInstance().getAllJob();
+        std::vector<int>& farmCreditB = GenerateJobB::getInstance().getFarmCredit();
 
         std::vector<User> balancedVector;
         std::vector<User> proportionVector;
@@ -37,10 +42,11 @@ class Slave : public cSimpleModule{
         int RW = -1;
 
         bool isOverTotalFrame(Job *job);
-        bool isAllJobFinisd(int userIndex);
-        User& findDispatchUser();
-        Job* findDispatchJob(User *user);
+        bool isAllJobFinisd(int userIndex, std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector);
+        User& findDispatchUser(std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector);
+        Job* findDispatchJob(User *user, std::vector<std::vector<Job>>& jobVector);
         void dispatchJob(User* user, Job* job);
+        void printFarmCredit(std::vector<int> &credit);
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -71,12 +77,19 @@ void Slave::handleMessage(cMessage *msg){
             int userIndex = msg1->getJob().user->userIndex;
             int jobVectorIndex = msg1->getJob().jobVectorIndex;
             int jobIndex = msg1->getJob().jobIndex;
+            std::string farmName = msg1->getJob().farm;
             delete msg1;
 
             struct User* user;
             struct Job* job;
-            user = &userVector.at(userIndex);
-            job = &jobVector[jobVectorIndex].at(jobIndex);
+            if(farmName=="A"){
+                user = &userVectorA.at(userIndex);
+                job = &jobVectorA[jobVectorIndex].at(jobIndex);
+            }
+            else if(farmName=="B"){
+                user = &userVectorB.at(userIndex);
+                job = &jobVectorB[jobVectorIndex].at(jobIndex);
+            }
 
             // 更新user
             user->userRenderingFrame = user->userRenderingFrame - 1;
@@ -97,8 +110,8 @@ void Slave::handleMessage(cMessage *msg){
                 //queueableJob--;
             }
 
-            user = &findDispatchUser();
-            job = findDispatchJob(user);
+            user = &findDispatchUser(userVectorA, jobVectorA);
+            job = findDispatchJob(user, jobVectorA);
             if(job!=nullptr){
                 //delete msg;
                 dispatchJob(user, job);
@@ -118,8 +131,17 @@ void Slave::handleMessage(cMessage *msg){
             struct User* user;
             struct Job* job;
 
-            user = &findDispatchUser();
-            job = findDispatchJob(user);
+            /*if(getIndex()==1){
+                EV<<"getIndex1: \n";
+                farmCredit = GenerateJobB::getInstance().getFarmCredit();
+            }
+            else{
+                EV<<"getIndex2: \n";
+                farmCredit = GenerateJob::getInstance().getFarmCredit();
+            }*/
+
+            user = &findDispatchUser(userVectorA, jobVectorA);
+            job = findDispatchJob(user, jobVectorA);
             if(job!=nullptr){
                 delete msg;
                 dispatchJob(user, job);
@@ -149,13 +171,13 @@ void Slave::handleMessage(cMessage *msg){
     }
 }
 
-User& Slave::findDispatchUser(){
+User& Slave::findDispatchUser(std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
         /*if(index==limitSearchUser){
             break;
         }*/
-        if(!isAllJobFinisd((*it).userIndex)){
+        if(!isAllJobFinisd((*it).userIndex, userVector, jobVector)){
             proportionVector.push_back(*it);
         }
         index++;
@@ -199,7 +221,7 @@ User& Slave::findDispatchUser(){
         /*if(index==limitSearchUser){
             break;
         }*/
-        if(!isAllJobFinisd((*it).userIndex)){
+        if(!isAllJobFinisd((*it).userIndex, userVector, jobVector)){
             //EV<<"findDispatchUser:Weight: "<<(*it).userWeight<<"\n";
             if((*it).userWeight > max){
                 max = (*it).userWeight;
@@ -215,7 +237,7 @@ User& Slave::findDispatchUser(){
         /*if(index==limitSearchUser){
             break;
         }*/
-        if(!isAllJobFinisd((*it).userIndex)){
+        if(!isAllJobFinisd((*it).userIndex, userVector, jobVector)){
             if((*it).userWeight == max){
                 balancedVector.push_back(*it);
             }
@@ -243,7 +265,7 @@ User& Slave::findDispatchUser(){
     return userVector.at(maxIndex);
 }
 
-bool Slave::isAllJobFinisd(int userIndex){
+bool Slave::isAllJobFinisd(int userIndex, std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector){
     int i = 0;
     for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
         if(i==userVector[userIndex].totalJob){
@@ -290,7 +312,7 @@ void Slave::dispatchJob(User* user, Job* job){
     scheduleAt(simTime()+renderTime, msg);
 }
 
-Job* Slave::findDispatchJob(User *user){
+Job* Slave::findDispatchJob(User *user, std::vector<std::vector<Job>>& jobVector){
     // TODO:後面加入workFlow
     int index = 0;
     int i = 0;
@@ -318,6 +340,10 @@ void Slave::refreshDisplay() const{
     }else{
         getDisplayString().setTagArg("i", 1, "snow");
     }
+}
+
+void Slave::printFarmCredit(std::vector<int> &credit){
+    EV<<"farmCredit: "<<credit[0]<<"\n";
 }
 
 void Slave::finish() {

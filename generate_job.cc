@@ -8,6 +8,8 @@
 #include "task.h"
 #define totalUser 4
 #define eachUserJob 10
+#define totalFarm 2
+#define totalSlave 100
 
 using namespace omnetpp;
 
@@ -18,6 +20,9 @@ GenerateJob::GenerateJob(){
     struct User user;
     struct Task task;
     userVector.reserve(totalUser);
+
+    farmCredit={5, 0};
+    slaveState={0};
 
     // πÍ≈Á¿Ùπ“2 17slave 4user 3eachUserJob 25task
     int pr[totalUser]={20, 15, 11, 10};
@@ -44,6 +49,7 @@ GenerateJob::GenerateJob(){
     for(int i=0;i<totalUser;i++){
         EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
         for(int j=0;j<eachUserJob;j++){
+            job.farm="A";
             job.taskVector.reserve(job.totalFrame);
             job.user = &userVector[i];
             job.jobIndex = jobIndex;
@@ -88,6 +94,14 @@ std::vector<std::vector<int>>& GenerateJob::getWorkflowHierarchy(){
 
 std::vector<std::vector<int>>& GenerateJob::getUserWorkflow(){
     return adj;
+}
+
+std::vector<int>& GenerateJob::getFarmCredit(){
+    return farmCredit;
+}
+
+std::vector<int>& GenerateJob::getSlaveState(){
+    return slaveState;
 }
 
 void GenerateJob::clearVector(){

@@ -21,6 +21,8 @@ public:
     std::vector<int>& getHierarchy();
     std::vector<std::vector<int>>& getWorkflowHierarchy();
     std::vector<std::vector<int>>& getUserWorkflow();
+    std::vector<int>& getFarmCredit();
+    std::vector<int>& getSlaveState();
     void clearVector();
 private:
     std::queue<std::vector<Job>> jobQueue;
@@ -30,6 +32,8 @@ private:
     std::vector<int> hierarchy;
     std::vector<std::vector<int>> workflowHierarchy;
     std::vector<std::vector<int>> adj;
+    std::vector<int> farmCredit;
+    std::vector<int> slaveState;
     int PW = 1;
     int EW = 0;
     int SW = 0;

@@ -10,7 +10,7 @@
 #include "user.h"
 #include "job.h"
 #define totalUser 4
-#define eachUserJob 10
+#define eachUserJob 1
 
 using namespace omnetpp;
 

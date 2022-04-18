@@ -46,11 +46,11 @@ void DatabaseB::handleMessage(cMessage *msg){
                     break;
                 }*/
                 EV<<"{";
-                EV<<"'simTime':"<<simTime()<<",";
-                EV<<"'userName':'"<<(*it).name<<"',";
-                EV<<"'renderingFrame':"<<(*it).userRenderingFrame<<",";
-                EV<<"'weight':"<<(*it).userWeight<<",";
-                EV<<"'total':"<<(*it).userFinishFrame;
+                EV<<"'simTimeB':"<<simTime()<<",";
+                EV<<"'userNameB':'"<<(*it).name<<"',";
+                EV<<"'renderingFrameB':"<<(*it).userRenderingFrame<<",";
+                EV<<"'weightB':"<<(*it).userWeight<<",";
+                EV<<"'totalB':"<<(*it).userFinishFrame;
                 EV<<"}\n";
                 if((*it).userRenderingFrame==0){
                     renderingFrameZero++;

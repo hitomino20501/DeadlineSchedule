@@ -21,6 +21,7 @@ struct Job{
     int jobVectorIndex = 0;
     bool isJobFinish = false;
     bool isActivate = false;
+    std::string farm;
     std::string jobColor;
     omnetpp::simtime_t startTime = 0;
     omnetpp::simtime_t finisdTime = 0;
