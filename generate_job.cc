@@ -7,7 +7,7 @@
 #include "job.h"
 #include "task.h"
 #define totalUser 4
-#define eachUserJob 10
+#define eachUserJob 1
 #define totalFarm 2
 #define totalSlave 100
 
@@ -23,7 +23,7 @@ GenerateJob::GenerateJob(){
 
     farmCredit={0, 10};
     slaveState.resize(totalSlave);
-    std::fill(slaveState.begin(), slaveState.end(), 0);
+    std::fill(slaveState.begin(), slaveState.end(), -1);
 
     // πÍ≈Á¿Ùπ“2 17slave 4user 3eachUserJob 25task
     int pr[totalUser]={20, 15, 11, 10};
@@ -51,6 +51,7 @@ GenerateJob::GenerateJob(){
         EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
         for(int j=0;j<eachUserJob;j++){
             job.farm="A";
+            job.totalFrame = 10;
             job.taskVector.reserve(job.totalFrame);
             job.user = &userVector[i];
             job.jobIndex = jobIndex;

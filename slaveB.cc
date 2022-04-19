@@ -10,7 +10,7 @@
 #include "user.h"
 #include "job.h"
 #define totalUser 4
-#define eachUserJob 1
+#define eachUserJob 10
 
 using namespace omnetpp;
 
@@ -27,6 +27,8 @@ class SlaveB : public cSimpleModule
 
         std::vector<User>& userVector = GenerateJobB::getInstance().getAllUser();
         std::vector<std::vector<Job>>& jobVector = GenerateJobB::getInstance().getAllJob();
+
+        std::vector<int>& slaveStateB = GenerateJobB::getInstance().getSlaveState();
 
         std::vector<User> balancedVector;
         std::vector<User> proportionVector;
@@ -97,6 +99,9 @@ void SlaveB::handleMessage(cMessage *msg){
                 user->finishJob = user->finishJob + 1;
                 //queueableJob--;
             }
+
+            // 更新slave
+            slaveStateB[getIndex()] = -1;
 
             Dispatch *msg2 = new Dispatch("hello");
             msg2->setKind(WorkerState::REQUEST_JOB);
@@ -280,6 +285,14 @@ void SlaveB::dispatchJob(User* user, Job* job){
 
     // 更新job狀態
     job->renderingFrame = job->renderingFrame + 1;
+
+    // 更新slave狀態
+    if(job->farm=="A"){
+        slaveStateB[getIndex()] = 0;
+    }
+    else if(job->farm=="B"){
+        slaveStateB[getIndex()] = 1;
+    }
 
     // start render
     userColor = job->user->userColor;

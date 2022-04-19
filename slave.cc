@@ -11,7 +11,7 @@
 #include "user.h"
 #include "job.h"
 #define totalUser 4
-#define eachUserJob 10
+#define eachUserJob 1
 
 using namespace omnetpp;
 
@@ -51,6 +51,8 @@ class Slave : public cSimpleModule{
         void dispatchJob(User* user, Job* job);
         void printFarmCredit(std::vector<int> &credit);
         std::string findFarmCredit(std::vector<int> &credit);
+        bool isFarmIdleSlave(std::vector<int>& slaveState);
+        int calRenderSlave(int farmIndex, std::vector<int>& slaveState);
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -115,7 +117,7 @@ void Slave::handleMessage(cMessage *msg){
             }
 
             // 更新slave
-            slaveStateA[getIndex()] = 0;
+            slaveStateA[getIndex()] = -1;
 
             Dispatch *msg2 = new Dispatch("hello");
             msg2->setKind(WorkerState::REQUEST_JOB);
@@ -159,11 +161,25 @@ void Slave::handleMessage(cMessage *msg){
             }else{
                 // 找一個Credit最大的農場
                 //farmCreditA
-                std::string test = findFarmCredit(farmCreditA);
-                //EV<<"Slave REQUEST_JOB but nullptr:\n";
-                msg->setKind(WorkerState::REQUEST_JOB);
-                msg->setSchedulingPriority(5);
-                scheduleAt(simTime()+1.0, msg);
+                std::string farm = findFarmCredit(farmCreditA);
+                if(farm=="B"){
+                    user = &findDispatchUser(userVectorB, jobVectorB);
+                    job = findDispatchJob(user, jobVectorB);
+                    if(job!=nullptr){
+                        delete msg;
+                        dispatchJob(user, job);
+                    }
+                    else{
+                        msg->setKind(WorkerState::REQUEST_JOB);
+                        msg->setSchedulingPriority(5);
+                        scheduleAt(simTime()+1.0, msg);
+                    }
+                }
+                else if(farm=="N"){
+                    msg->setKind(WorkerState::REQUEST_JOB);
+                    msg->setSchedulingPriority(5);
+                    scheduleAt(simTime()+1.0, msg);
+                }
             }
         }
     }
@@ -186,20 +202,91 @@ void Slave::handleMessage(cMessage *msg){
 }
 
 std::string Slave::findFarmCredit(std::vector<int> &credit){
+    std::vector<int> balancedCreditVector;
     int index = 0;
     int max = -1000;
-    int maxIndex = 0;
+    int maxIndex = -1;
     for (auto it = credit.begin(); it != credit.end(); ++it){
+        // 跳過自己農場index
         if(index==0){
             continue;
         }
-        if((*it) > max){
-            max = (*it);
-            maxIndex = index;
+        else if(index==1){
+            // B農場
+            if(!isFarmIdleSlave(slaveStateB)){
+                if((*it) > max){
+                    max = (*it);
+                    maxIndex = index;
+                }
+            }
         }
+
         index++;
     }
-    return "test";
+    if(maxIndex==-1){
+        return "N";
+    }
+    index = 0;
+    for (auto it = credit.begin(); it != credit.end(); ++it){
+        // 跳過自己農場index
+        if(index==0){
+            continue;
+        }
+        else if(index==1){
+            // B農場
+            if(!isFarmIdleSlave(slaveStateB)){
+                if((*it) == max){
+                    balancedCreditVector.push_back(index);
+                }
+            }
+        }
+
+        index++;
+    }
+
+    if(balancedVector.size()>1){
+        //EV<<"Invoke balanced:\n";
+        int minRender = -1;
+        for (auto it = balancedCreditVector.begin(); it != balancedCreditVector.end(); ++it){
+            int temCel = calRenderSlave((*it), slaveStateA);
+            if(minRender==-1){
+                minRender = temCel;
+                maxIndex = (*it);
+            }else{
+                if(temCel<minRender){
+                    minRender = temCel;
+                    maxIndex = (*it);
+                }
+            }
+        }
+        balancedCreditVector.clear();
+    }
+
+    if(maxIndex==1){
+        return "B";
+    }
+
+    return "N";
+}
+
+bool Slave::isFarmIdleSlave(std::vector<int>& slaveState){
+    for (auto it = slaveState.begin(); it != slaveState.end(); ++it){
+        // slaveState -1 代表slave idle
+        if((*it)==-1){
+            return true;
+        }
+    }
+    return false;
+}
+
+int Slave::calRenderSlave(int farmIndex, std::vector<int>& slaveState){
+    int cal = 0;
+    for (auto it = slaveState.begin(); it != slaveState.end(); ++it){
+        if((*it)==farmIndex){
+            cal++;
+        }
+    }
+    return cal;
 }
 
 User& Slave::findDispatchUser(std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector){
@@ -331,10 +418,10 @@ void Slave::dispatchJob(User* user, Job* job){
 
     // 更新slave狀態
     if(job->farm=="A"){
-        slaveStateA[getIndex()] = 1;
+        slaveStateA[getIndex()] = 0;
     }
     else if(job->farm=="B"){
-        slaveStateA[getIndex()] = 2;
+        slaveStateA[getIndex()] = 1;
     }
 
     // start render

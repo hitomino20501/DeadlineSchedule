@@ -9,7 +9,7 @@
 #include "dispatch_m.h"
 #include "generate_jobB.h"
 #define totalUser 4
-#define eachUserJob 1
+#define eachUserJob 10
 
 using namespace omnetpp;
 
