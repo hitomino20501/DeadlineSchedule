@@ -98,7 +98,11 @@ void SlaveB::handleMessage(cMessage *msg){
                 //queueableJob--;
             }
 
-            user = &findDispatchUser();
+            Dispatch *msg2 = new Dispatch("hello");
+            msg2->setKind(WorkerState::REQUEST_JOB);
+            msg2->setSchedulingPriority(5);
+            scheduleAt(simTime()+1.0, msg2);
+            /*user = &findDispatchUser();
             job = findDispatchJob(user);
             if(job!=nullptr){
                 //delete msg;
@@ -109,7 +113,7 @@ void SlaveB::handleMessage(cMessage *msg){
                 msg1->setKind(WorkerState::REQUEST_JOB);
                 msg1->setSchedulingPriority(5);
                 scheduleAt(simTime()+1.0, msg1);
-            }
+            }*/
 
         }else{
             //EV<<"Slave request a job: "<<simTime()<<"\n";
@@ -286,7 +290,7 @@ void SlaveB::dispatchJob(User* user, Job* job){
     //simtime_t renderTime = round(par("delayTime"));
     Dispatch *msg = new Dispatch("frameSucceed");
     msg->setKind(WorkerState::FRAME_SUCCEEDED);
-    msg->setSchedulingPriority(5);
+    msg->setSchedulingPriority(3);
     msg->setJob(*job);
     scheduleAt(simTime()+renderTime, msg);
 }

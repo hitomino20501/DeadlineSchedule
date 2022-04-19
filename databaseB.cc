@@ -60,6 +60,11 @@ void DatabaseB::handleMessage(cMessage *msg){
             if(renderingFrameZero==userVector.size()){
                 logFlag++;
             }
+            else{
+                if(logFlag>0){
+                    logFlag--;
+                }
+            }
             if(logFlag<4){
                 scheduleAt(simTime()+5.0, msg);
             }else{

@@ -32,6 +32,9 @@ class Slave : public cSimpleModule{
         std::vector<std::vector<Job>>& jobVectorB = GenerateJobB::getInstance().getAllJob();
         std::vector<int>& farmCreditB = GenerateJobB::getInstance().getFarmCredit();
 
+        std::vector<int>& slaveStateA = GenerateJob::getInstance().getSlaveState();
+        std::vector<int>& slaveStateB = GenerateJobB::getInstance().getSlaveState();
+
         std::vector<User> balancedVector;
         std::vector<User> proportionVector;
 
@@ -47,6 +50,7 @@ class Slave : public cSimpleModule{
         Job* findDispatchJob(User *user, std::vector<std::vector<Job>>& jobVector);
         void dispatchJob(User* user, Job* job);
         void printFarmCredit(std::vector<int> &credit);
+        std::string findFarmCredit(std::vector<int> &credit);
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -110,7 +114,14 @@ void Slave::handleMessage(cMessage *msg){
                 //queueableJob--;
             }
 
-            user = &findDispatchUser(userVectorA, jobVectorA);
+            // 更新slave
+            slaveStateA[getIndex()] = 0;
+
+            Dispatch *msg2 = new Dispatch("hello");
+            msg2->setKind(WorkerState::REQUEST_JOB);
+            msg2->setSchedulingPriority(5);
+            scheduleAt(simTime()+1.0, msg2);
+            /*user = &findDispatchUser(userVectorA, jobVectorA);
             job = findDispatchJob(user, jobVectorA);
             if(job!=nullptr){
                 //delete msg;
@@ -121,7 +132,7 @@ void Slave::handleMessage(cMessage *msg){
                 msg1->setKind(WorkerState::REQUEST_JOB);
                 msg1->setSchedulingPriority(5);
                 scheduleAt(simTime()+1.0, msg1);
-            }
+            }*/
 
         }else{
             //EV<<"Slave request a job: "<<simTime()<<"\n";
@@ -146,6 +157,9 @@ void Slave::handleMessage(cMessage *msg){
                 delete msg;
                 dispatchJob(user, job);
             }else{
+                // 找一個Credit最大的農場
+                //farmCreditA
+                std::string test = findFarmCredit(farmCreditA);
                 //EV<<"Slave REQUEST_JOB but nullptr:\n";
                 msg->setKind(WorkerState::REQUEST_JOB);
                 msg->setSchedulingPriority(5);
@@ -169,6 +183,23 @@ void Slave::handleMessage(cMessage *msg){
             cancelAndDelete(msg);
         }
     }
+}
+
+std::string Slave::findFarmCredit(std::vector<int> &credit){
+    int index = 0;
+    int max = -1000;
+    int maxIndex = 0;
+    for (auto it = credit.begin(); it != credit.end(); ++it){
+        if(index==0){
+            continue;
+        }
+        if((*it) > max){
+            max = (*it);
+            maxIndex = index;
+        }
+        index++;
+    }
+    return "test";
 }
 
 User& Slave::findDispatchUser(std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector){
@@ -298,6 +329,14 @@ void Slave::dispatchJob(User* user, Job* job){
     // 更新job狀態
     job->renderingFrame = job->renderingFrame + 1;
 
+    // 更新slave狀態
+    if(job->farm=="A"){
+        slaveStateA[getIndex()] = 1;
+    }
+    else if(job->farm=="B"){
+        slaveStateA[getIndex()] = 2;
+    }
+
     // start render
     userColor = job->user->userColor;
     userName = job->user->name;
@@ -307,7 +346,7 @@ void Slave::dispatchJob(User* user, Job* job){
     //simtime_t renderTime = round(par("delayTime"));
     Dispatch *msg = new Dispatch("frameSucceed");
     msg->setKind(WorkerState::FRAME_SUCCEEDED);
-    msg->setSchedulingPriority(5);
+    msg->setSchedulingPriority(3);
     msg->setJob(*job);
     scheduleAt(simTime()+renderTime, msg);
 }

@@ -21,8 +21,9 @@ GenerateJobB::GenerateJobB(){
     struct Task task;
     userVector.reserve(totalUser);
 
-    farmCredit={10, 0};
-    slaveState={0};
+    farmCredit={-10, 0};
+    slaveState.resize(totalSlave);
+    std::fill(slaveState.begin(), slaveState.end(), 0);
 
     // πÍ≈Á¿Ùπ“2 17slave 4user 3eachUserJob 25task
     int pr[totalUser]={20, 15, 11, 10};
