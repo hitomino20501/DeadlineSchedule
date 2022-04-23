@@ -30,7 +30,7 @@ GenerateJob::GenerateJob(){
     int pro[totalUser]={6, 2, 1, 1};
     int userIndex = 0;
     for(int i=0;i<totalUser;i++){
-        user.name = "User"+std::to_string(i);
+        user.name = "UserA"+std::to_string(i);
         user.priority = pr[i];
         user.proportion = pro[i];
         user.userIndex = userIndex;

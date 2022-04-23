@@ -19,6 +19,7 @@ class DatabaseB : public cSimpleModule{
         int logFlag = 0;
         std::vector<std::vector<Job>>& jobVector = GenerateJobB::getInstance().getAllJob();
         std::vector<User>& userVector = GenerateJobB::getInstance().getAllUser();
+        std::vector<int>& slaveStateB = GenerateJobB::getInstance().getSlaveState();
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -38,6 +39,9 @@ void DatabaseB::handleMessage(cMessage *msg){
     int msgKind = msg->getKind();
     if(msg->isSelfMessage()){
         if(msgKind==WorkerState::LOG_TIMER){
+            /*for (auto it = slaveStateB.begin(); it != slaveStateB.end(); ++it){
+                EV<<"slaveStateB"<<*it<<"\n";
+            }*/
             //EV<<"just print\n";
             int renderingFrameZero = 0;
             int index = 0;

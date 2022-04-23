@@ -160,8 +160,9 @@ void Slave::handleMessage(cMessage *msg){
                 dispatchJob(user, job);
             }else{
                 // 找一個Credit最大的農場
-                //farmCreditA
+                //EV<<"find job from other farm\n";
                 std::string farm = findFarmCredit(farmCreditA);
+                //EV<<farm<<"\n";
                 if(farm=="B"){
                     user = &findDispatchUser(userVectorB, jobVectorB);
                     job = findDispatchJob(user, jobVectorB);
@@ -178,7 +179,7 @@ void Slave::handleMessage(cMessage *msg){
                 else if(farm=="N"){
                     msg->setKind(WorkerState::REQUEST_JOB);
                     msg->setSchedulingPriority(5);
-                    scheduleAt(simTime()+1.0, msg);
+                    scheduleAt(simTime()+10.0, msg);
                 }
             }
         }
@@ -204,11 +205,13 @@ void Slave::handleMessage(cMessage *msg){
 std::string Slave::findFarmCredit(std::vector<int> &credit){
     std::vector<int> balancedCreditVector;
     int index = 0;
-    int max = -1000;
+    int max = -100000;
     int maxIndex = -1;
     for (auto it = credit.begin(); it != credit.end(); ++it){
+        //EV<<*it<<"\n";
         // 跳過自己農場index
         if(index==0){
+            index++;
             continue;
         }
         else if(index==1){
@@ -230,6 +233,7 @@ std::string Slave::findFarmCredit(std::vector<int> &credit){
     for (auto it = credit.begin(); it != credit.end(); ++it){
         // 跳過自己農場index
         if(index==0){
+            index++;
             continue;
         }
         else if(index==1){
@@ -270,7 +274,9 @@ std::string Slave::findFarmCredit(std::vector<int> &credit){
 }
 
 bool Slave::isFarmIdleSlave(std::vector<int>& slaveState){
+    //EV<<"slaveStateB\n";
     for (auto it = slaveState.begin(); it != slaveState.end(); ++it){
+        //EV<<"slaveStateB"<<*it<<"\n";
         // slaveState -1 代表slave idle
         if((*it)==-1){
             return true;
@@ -422,6 +428,10 @@ void Slave::dispatchJob(User* user, Job* job){
     }
     else if(job->farm=="B"){
         slaveStateA[getIndex()] = 1;
+        farmCreditA[1] = farmCreditA[1] + 1;
+        farmCreditB[0] = farmCreditB[0] - 1;
+        /*EV<<"farmCreditA[1]"<<farmCreditA[1]<<"\n";
+        EV<<"farmCreditB[0]"<<farmCreditB[0]<<"\n";*/
     }
 
     // start render
