@@ -6,16 +6,16 @@
 #include <numeric>
 #include "state.h"
 #include "dispatch_m.h"
+#include "generate_job.h"
 #include "generate_jobB.h"
 #include "user.h"
 #include "job.h"
 #define totalUser 4
-#define eachUserJob 10
+#define eachUserJob 1
 
 using namespace omnetpp;
 
-class SlaveB : public cSimpleModule
-{
+class SlaveB : public cSimpleModule{
     private:
         //struct Job* job;
         bool renderColor = false;
@@ -25,9 +25,14 @@ class SlaveB : public cSimpleModule
         double denominator = 0.0;
         double totalSlave = 100.0;
 
-        std::vector<User>& userVector = GenerateJobB::getInstance().getAllUser();
-        std::vector<std::vector<Job>>& jobVector = GenerateJobB::getInstance().getAllJob();
+        std::vector<User>& userVectorA = GenerateJob::getInstance().getAllUser();
+        std::vector<std::vector<Job>>& jobVectorA = GenerateJob::getInstance().getAllJob();
+        std::vector<int>& farmCreditA = GenerateJob::getInstance().getFarmCredit();
+        std::vector<User>& userVectorB = GenerateJobB::getInstance().getAllUser();
+        std::vector<std::vector<Job>>& jobVectorB = GenerateJobB::getInstance().getAllJob();
+        std::vector<int>& farmCreditB = GenerateJobB::getInstance().getFarmCredit();
 
+        std::vector<int>& slaveStateA = GenerateJob::getInstance().getSlaveState();
         std::vector<int>& slaveStateB = GenerateJobB::getInstance().getSlaveState();
 
         std::vector<User> balancedVector;
@@ -40,10 +45,14 @@ class SlaveB : public cSimpleModule
         int RW = -1;
 
         bool isOverTotalFrame(Job *job);
-        bool isAllJobFinisd(int userIndex);
-        User& findDispatchUser();
-        Job* findDispatchJob(User *user);
+        bool isAllJobFinisd(int userIndex, std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector);
+        User& findDispatchUser(std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector);
+        Job* findDispatchJob(User *user, std::vector<std::vector<Job>>& jobVector);
         void dispatchJob(User* user, Job* job);
+        void printFarmCredit(std::vector<int> &credit);
+        std::string findFarmCredit(std::vector<int> &credit);
+        bool isFarmIdleSlave(std::vector<int>& slaveState);
+        int calRenderSlave(int farmIndex, std::vector<int>& slaveState);
     protected:
     // The following redefined virtual function holds the algorithm.
         virtual void initialize() override;
@@ -74,12 +83,19 @@ void SlaveB::handleMessage(cMessage *msg){
             int userIndex = msg1->getJob().user->userIndex;
             int jobVectorIndex = msg1->getJob().jobVectorIndex;
             int jobIndex = msg1->getJob().jobIndex;
+            std::string farmName = msg1->getJob().farm;
             delete msg1;
 
             struct User* user;
             struct Job* job;
-            user = &userVector.at(userIndex);
-            job = &jobVector[jobVectorIndex].at(jobIndex);
+            if(farmName=="A"){
+                user = &userVectorA.at(userIndex);
+                job = &jobVectorA[jobVectorIndex].at(jobIndex);
+            }
+            else if(farmName=="B"){
+                user = &userVectorB.at(userIndex);
+                job = &jobVectorB[jobVectorIndex].at(jobIndex);
+            }
 
             // 更新user
             user->userRenderingFrame = user->userRenderingFrame - 1;
@@ -100,15 +116,15 @@ void SlaveB::handleMessage(cMessage *msg){
                 //queueableJob--;
             }
 
-            // 更新slave
+            // 更新slave NOTE
             slaveStateB[getIndex()] = -1;
 
             Dispatch *msg2 = new Dispatch("hello");
             msg2->setKind(WorkerState::REQUEST_JOB);
             msg2->setSchedulingPriority(5);
             scheduleAt(simTime()+1.0, msg2);
-            /*user = &findDispatchUser();
-            job = findDispatchJob(user);
+            /*user = &findDispatchUser(userVectorA, jobVectorA);
+            job = findDispatchJob(user, jobVectorA);
             if(job!=nullptr){
                 //delete msg;
                 dispatchJob(user, job);
@@ -128,16 +144,43 @@ void SlaveB::handleMessage(cMessage *msg){
             struct User* user;
             struct Job* job;
 
-            user = &findDispatchUser();
-            job = findDispatchJob(user);
+            /*if(getIndex()==1){
+                EV<<"getIndex1: \n";
+                farmCredit = GenerateJobB::getInstance().getFarmCredit();
+            }
+            else{
+                EV<<"getIndex2: \n";
+                farmCredit = GenerateJob::getInstance().getFarmCredit();
+            }*/
+
+            user = &findDispatchUser(userVectorB, jobVectorB);
+            job = findDispatchJob(user, jobVectorB);
             if(job!=nullptr){
                 delete msg;
                 dispatchJob(user, job);
             }else{
-                //EV<<"Slave REQUEST_JOB but nullptr:\n";
-                msg->setKind(WorkerState::REQUEST_JOB);
-                msg->setSchedulingPriority(5);
-                scheduleAt(simTime()+1.0, msg);
+                // 找一個Credit最大的農場
+                //EV<<"find job from other farm\n";
+                std::string farm = findFarmCredit(farmCreditB);
+                //EV<<"farm: "<<farm<<"\n";
+                if(farm=="A"){
+                    user = &findDispatchUser(userVectorA, jobVectorA);
+                    job = findDispatchJob(user, jobVectorA);
+                    if(job!=nullptr){
+                        delete msg;
+                        dispatchJob(user, job);
+                    }
+                    else{
+                        msg->setKind(WorkerState::REQUEST_JOB);
+                        msg->setSchedulingPriority(5);
+                        scheduleAt(simTime()+1.0, msg);
+                    }
+                }
+                else if(farm=="N"){
+                    msg->setKind(WorkerState::REQUEST_JOB);
+                    msg->setSchedulingPriority(5);
+                    scheduleAt(simTime()+10.0, msg);
+                }
             }
         }
     }
@@ -159,13 +202,110 @@ void SlaveB::handleMessage(cMessage *msg){
     }
 }
 
-User& SlaveB::findDispatchUser(){
+std::string SlaveB::findFarmCredit(std::vector<int> &credit){
+    std::vector<int> balancedCreditVector;
+    int index = 0;
+    int max = -100000;
+    int maxIndex = -1;
+    for (auto it = credit.begin(); it != credit.end(); ++it){
+        //EV<<*it<<"\n";
+        // 跳過自己農場index
+        if(index==0){
+            // A農場
+            if(!isFarmIdleSlave(slaveStateA)){
+                //EV<<"farmA has max\n";
+                if((*it) > max){
+                    max = (*it);
+                    maxIndex = index;
+                }
+            }
+        }
+        else if(index==1){
+            index++;
+            continue;
+        }
+
+        index++;
+    }
+    if(maxIndex==-1){
+        return "N";
+    }
+    index = 0;
+    for (auto it = credit.begin(); it != credit.end(); ++it){
+        // 跳過自己農場index
+        if(index==0){
+            // A農場
+            if(!isFarmIdleSlave(slaveStateA)){
+                if((*it) == max){
+                    balancedCreditVector.push_back(index);
+                }
+            }
+        }
+        else if(index==1){
+            index++;
+            continue;
+        }
+
+        index++;
+    }
+
+    if(balancedVector.size()>1){
+        //EV<<"Invoke balanced:\n";
+        int minRender = -1;
+        for (auto it = balancedCreditVector.begin(); it != balancedCreditVector.end(); ++it){
+            int temCel = calRenderSlave((*it), slaveStateB);
+            if(minRender==-1){
+                minRender = temCel;
+                maxIndex = (*it);
+            }else{
+                if(temCel<minRender){
+                    minRender = temCel;
+                    maxIndex = (*it);
+                }
+            }
+        }
+        balancedCreditVector.clear();
+    }
+
+    if(maxIndex==0){
+        return "A";
+    }
+
+    return "N";
+}
+
+bool SlaveB::isFarmIdleSlave(std::vector<int>& slaveState){
+    //EV<<"slaveStateB\n";
+    for (auto it = slaveState.begin(); it != slaveState.end(); ++it){
+        //EV<<"slaveStateB"<<*it<<"\n";
+        // slaveState -1 代表slave idle
+        if((*it)==-1){
+            return true;
+        }
+    }
+    return false;
+}
+
+int SlaveB::calRenderSlave(int farmIndex, std::vector<int>& slaveState){
+    int cal = 0;
+    for (auto it = slaveState.begin(); it != slaveState.end(); ++it){
+        if((*it)==farmIndex){
+            cal++;
+        }
+    }
+    return cal;
+}
+
+User& SlaveB::findDispatchUser(std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
         /*if(index==limitSearchUser){
             break;
         }*/
-        if(!isAllJobFinisd((*it).userIndex)){
+        if(!isAllJobFinisd((*it).userIndex, userVector, jobVector)){
+            proportionVector.push_back(*it);
+        }
+        else if((*it).userRenderingFrame>0){
             proportionVector.push_back(*it);
         }
         index++;
@@ -209,7 +349,7 @@ User& SlaveB::findDispatchUser(){
         /*if(index==limitSearchUser){
             break;
         }*/
-        if(!isAllJobFinisd((*it).userIndex)){
+        if(!isAllJobFinisd((*it).userIndex, userVector, jobVector)){
             //EV<<"findDispatchUser:Weight: "<<(*it).userWeight<<"\n";
             if((*it).userWeight > max){
                 max = (*it).userWeight;
@@ -225,7 +365,7 @@ User& SlaveB::findDispatchUser(){
         /*if(index==limitSearchUser){
             break;
         }*/
-        if(!isAllJobFinisd((*it).userIndex)){
+        if(!isAllJobFinisd((*it).userIndex, userVector, jobVector)){
             if((*it).userWeight == max){
                 balancedVector.push_back(*it);
             }
@@ -237,6 +377,7 @@ User& SlaveB::findDispatchUser(){
         //EV<<"Invoke balanced:\n";
         int minRender = -1;
         for (auto it = balancedVector.begin(); it != balancedVector.end(); ++it){
+            //EV<<"userRenderingFrame"<<(*it).userRenderingFrame<<"\n";
             if(minRender==-1){
                 minRender = (*it).userRenderingFrame;
                 maxIndex = (*it).userIndex;
@@ -253,8 +394,9 @@ User& SlaveB::findDispatchUser(){
     return userVector.at(maxIndex);
 }
 
-bool SlaveB::isAllJobFinisd(int userIndex){
+bool SlaveB::isAllJobFinisd(int userIndex, std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector){
     int i = 0;
+    int temFin = 0;
     for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
         if(i==userVector[userIndex].totalJob){
             break;
@@ -289,9 +431,15 @@ void SlaveB::dispatchJob(User* user, Job* job){
     // 更新slave狀態
     if(job->farm=="A"){
         slaveStateB[getIndex()] = 0;
+        farmCreditA[1] = farmCreditA[1] + 1;
+        farmCreditB[0] = farmCreditB[0] - 1;
+        /*EV<<"farmCreditA[1]"<<farmCreditA[1]<<"\n";
+        EV<<"farmCreditB[0]"<<farmCreditB[0]<<"\n";*/
     }
     else if(job->farm=="B"){
         slaveStateB[getIndex()] = 1;
+        /*EV<<"farmCreditA[1]"<<farmCreditA[1]<<"\n";
+        EV<<"farmCreditB[0]"<<farmCreditB[0]<<"\n";*/
     }
 
     // start render
@@ -299,7 +447,8 @@ void SlaveB::dispatchJob(User* user, Job* job){
     userName = job->user->name;
     //EV<<"Slave start rendering: "<<simTime()<<"\n";
     renderColor = true;
-    simtime_t renderTime = 10.0;
+    //simtime_t renderTime = 10.0;
+    simtime_t renderTime = job->renderTime;
     //simtime_t renderTime = round(par("delayTime"));
     Dispatch *msg = new Dispatch("frameSucceed");
     msg->setKind(WorkerState::FRAME_SUCCEEDED);
@@ -308,7 +457,7 @@ void SlaveB::dispatchJob(User* user, Job* job){
     scheduleAt(simTime()+renderTime, msg);
 }
 
-Job* SlaveB::findDispatchJob(User *user){
+Job* SlaveB::findDispatchJob(User *user, std::vector<std::vector<Job>>& jobVector){
     // TODO:後面加入workFlow
     int index = 0;
     int i = 0;
@@ -338,8 +487,12 @@ void SlaveB::refreshDisplay() const{
     }
 }
 
+void SlaveB::printFarmCredit(std::vector<int> &credit){
+    EV<<"farmCredit: "<<credit[0]<<"\n";
+}
+
 void SlaveB::finish() {
     //jobVector.clear();
-    GenerateJobB::getInstance().clearVector();
+    GenerateJob::getInstance().clearVector();
     balancedVector.clear();
 }

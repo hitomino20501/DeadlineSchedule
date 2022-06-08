@@ -32,7 +32,7 @@ void DatabaseB::initialize(){
     Dispatch *msg = new Dispatch("log");
     msg->setKind(WorkerState::LOG_TIMER);
     msg->setSchedulingPriority(10);
-    scheduleAt(0.0, msg);
+    //scheduleAt(0.0, msg);
 }
 
 void DatabaseB::handleMessage(cMessage *msg){

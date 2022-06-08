@@ -7,7 +7,7 @@
 #include "job.h"
 #include "task.h"
 #define totalUser 4
-#define eachUserJob 10
+#define eachUserJob 1
 #define totalFarm 2
 #define totalSlave 100
 
@@ -21,7 +21,7 @@ GenerateJobB::GenerateJobB(){
     struct Task task;
     userVector.reserve(totalUser);
 
-    farmCredit={-10, 0};
+    farmCredit={0, 0};
     slaveState.resize(totalSlave);
     std::fill(slaveState.begin(), slaveState.end(), -1);
 
@@ -43,28 +43,105 @@ GenerateJobB::GenerateJobB(){
     }
 
     std::vector<Job> temJob;
-    temJob.reserve(eachUserJob);
-    jobVector.reserve(totalUser*eachUserJob);
+    //temJob.reserve(eachUserJob);
+    //jobVector.reserve(totalUser*eachUserJob);
 
     int jobIndex = 0;
     for(int i=0;i<totalUser;i++){
         EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
-        for(int j=0;j<eachUserJob;j++){
-            job.farm="B";
-            job.totalFrame = 100;
-            job.taskVector.reserve(job.totalFrame);
-            job.user = &userVector[i];
-            job.jobIndex = jobIndex;
-            jobIndex++;
-            job.jobVectorIndex = jobVectorIndex;
-            for(int k=0;k<job.totalFrame;k++){
-                task.taskIndex = k;
-                job.taskVector.push_back(task);
+        if(i==0){
+            for(int j=0;j<2;j++){
+                job.farm="B";
+                if(j==0){
+                    job.totalFrame = 60;
+                    job.renderTime = 150.0;
+                }
+                else if(j==1){
+                    job.totalFrame = 80;
+                    job.renderTime = 100.0;
+                }
+                //job.totalFrame = 10;
+                job.taskVector.reserve(job.totalFrame);
+                job.user = &userVector[i];
+                job.jobIndex = jobIndex;
+                jobIndex++;
+                job.jobVectorIndex = jobVectorIndex;
+                for(int k=0;k<job.totalFrame;k++){
+                    task.taskIndex = k;
+                    job.taskVector.push_back(task);
+                }
+                temJob.push_back(job);
+                job.taskVector.clear();
+                //userVector[i].totalJob = userVector[i].totalJob+1;
             }
-            temJob.push_back(job);
-            job.taskVector.clear();
-            //userVector[i].totalJob = userVector[i].totalJob+1;
         }
+        if(i==1){
+            for(int j=0;j<eachUserJob;j++){
+                job.farm="B";
+                if(j==0){
+                    job.totalFrame = 60;
+                    job.renderTime = 150.0;
+                }
+                //job.totalFrame = 10;
+                job.taskVector.reserve(job.totalFrame);
+                job.user = &userVector[i];
+                job.jobIndex = jobIndex;
+                jobIndex++;
+                job.jobVectorIndex = jobVectorIndex;
+                for(int k=0;k<job.totalFrame;k++){
+                    task.taskIndex = k;
+                    job.taskVector.push_back(task);
+                }
+                temJob.push_back(job);
+                job.taskVector.clear();
+                //userVector[i].totalJob = userVector[i].totalJob+1;
+            }
+        }
+        if(i==2){
+            for(int j=0;j<eachUserJob;j++){
+                job.farm="B";
+                if(j==0){
+                    job.totalFrame = 10;
+                    job.renderTime = 150.0;
+                }
+                //job.totalFrame = 10;
+                job.taskVector.reserve(job.totalFrame);
+                job.user = &userVector[i];
+                job.jobIndex = jobIndex;
+                jobIndex++;
+                job.jobVectorIndex = jobVectorIndex;
+                for(int k=0;k<job.totalFrame;k++){
+                    task.taskIndex = k;
+                    job.taskVector.push_back(task);
+                }
+                temJob.push_back(job);
+                job.taskVector.clear();
+                //userVector[i].totalJob = userVector[i].totalJob+1;
+            }
+        }
+        if(i==3){
+            for(int j=0;j<eachUserJob;j++){
+                job.farm="B";
+                if(j==0){
+                    job.totalFrame = 10;
+                    job.renderTime = 150.0;
+                }
+                //job.totalFrame = 10;
+                job.taskVector.reserve(job.totalFrame);
+                job.user = &userVector[i];
+                job.jobIndex = jobIndex;
+                jobIndex++;
+                job.jobVectorIndex = jobVectorIndex;
+                for(int k=0;k<job.totalFrame;k++){
+                    task.taskIndex = k;
+                    job.taskVector.push_back(task);
+                }
+                temJob.push_back(job);
+                job.taskVector.clear();
+                //userVector[i].totalJob = userVector[i].totalJob+1;
+            }
+        }
+
         jobQueue.push(temJob);
         jobVector.push_back(temJob);
         jobVectorIndex++;

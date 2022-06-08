@@ -40,6 +40,10 @@ void Workstation::initialize(){
     Dispatch *msg = new Dispatch("hello");
     msg->setKind(WorkerState::SUBMIT_JOB);
     scheduleAt(0, msg);
+
+    Dispatch *msg1 = new Dispatch("hello");
+    msg1->setKind(100);
+    scheduleAt(70, msg1);
 }
 
 void Workstation::handleMessage(cMessage *msg){
@@ -64,6 +68,11 @@ void Workstation::handleMessage(cMessage *msg){
         }
         else{
             cancelAndDelete(msg);
+        }
+        if(msgKind==100){
+            struct User* user;
+            user = &userVector[0];
+            user->totalJob = user->totalJob + 1;
         }
     }
 }

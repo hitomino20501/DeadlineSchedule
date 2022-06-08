@@ -9,6 +9,7 @@
 #include "state.h"
 #include "dispatch_m.h"
 #include "generate_job.h"
+#include "generate_jobB.h"
 #define totalUser 4
 #define eachUserJob 10
 
@@ -24,6 +25,12 @@ class Database : public cSimpleModule{
         //std::vector<User> userVector;
         std::vector<User>& userVector = GenerateJob::getInstance().getAllUser();
         std::vector<std::vector<int>>& adj = GenerateJob::getInstance().getUserWorkflow();
+
+        std::vector<int>& slaveStateA = GenerateJob::getInstance().getSlaveState();
+        std::vector<int>& slaveStateB = GenerateJobB::getInstance().getSlaveState();
+        std::vector<int>& farmCreditA = GenerateJob::getInstance().getFarmCredit();
+        std::vector<int>& farmCreditB = GenerateJobB::getInstance().getFarmCredit();
+
         int PW = 1;
         int EW = 0;
         int SW = 0;
@@ -75,10 +82,7 @@ void Database::handleMessage(cMessage *msg){
             //EV<<"just print\n";
             int renderingFrameZero = 0;
             int index = 0;
-            for (auto it = userVector.begin(); it != userVector.end(); ++it){
-                /*if(index==limitSearchUser){
-                    break;
-                }*/
+            /*for (auto it = userVector.begin(); it != userVector.end(); ++it){
                 EV<<"{";
                 EV<<"'simTime':"<<simTime()<<",";
                 EV<<"'userName':'"<<(*it).name<<"',";
@@ -90,8 +94,42 @@ void Database::handleMessage(cMessage *msg){
                     renderingFrameZero++;
                 }
                 index++;
+            }*/
+            int farmA = 0;
+            int farmB = 0;
+            for (auto it = slaveStateA.begin(); it != slaveStateA.end(); ++it){
+                //EV<<"Log:"<<*it<<"\n";
+                if((*it)==0){
+                    farmA = farmA + 1;
+                }
+                if((*it)==1){
+                    farmB = farmB + 1;
+                }
             }
-            if(renderingFrameZero==userVector.size()){
+            for (auto it = slaveStateB.begin(); it != slaveStateB.end(); ++it){
+                if((*it)==0){
+                    farmA = farmA + 1;
+                }
+                if((*it)==1){
+                    farmB = farmB + 1;
+                }
+            }
+            EV<<"{";
+            EV<<"'simTime':"<<simTime()<<",";
+            EV<<"'farmNameA':"<<farmA<<",";
+            EV<<"'farmNameB':"<<farmB<<",";
+            EV<<"'creditA':"<<farmCreditB[0]<<",";
+            EV<<"'creditB':"<<farmCreditA[1];
+            EV<<"}\n";
+            /*if(renderingFrameZero==userVector.size()){
+                logFlag++;
+            }
+            else{
+                if(logFlag>0){
+                    logFlag--;
+                }
+            }*/
+            if(farmA==0 && farmB==0){
                 logFlag++;
             }
             else{

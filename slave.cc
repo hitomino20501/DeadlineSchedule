@@ -11,7 +11,7 @@
 #include "user.h"
 #include "job.h"
 #define totalUser 4
-#define eachUserJob 1
+#define eachUserJob 10
 
 using namespace omnetpp;
 
@@ -304,6 +304,9 @@ User& Slave::findDispatchUser(std::vector<User>& userVector, std::vector<std::ve
         if(!isAllJobFinisd((*it).userIndex, userVector, jobVector)){
             proportionVector.push_back(*it);
         }
+        else if((*it).userRenderingFrame>0){
+            proportionVector.push_back(*it);
+        }
         index++;
     }
     denominator = 0;
@@ -373,6 +376,7 @@ User& Slave::findDispatchUser(std::vector<User>& userVector, std::vector<std::ve
         //EV<<"Invoke balanced:\n";
         int minRender = -1;
         for (auto it = balancedVector.begin(); it != balancedVector.end(); ++it){
+            //EV<<"userRenderingFrame"<<(*it).userRenderingFrame<<"\n";
             if(minRender==-1){
                 minRender = (*it).userRenderingFrame;
                 maxIndex = (*it).userIndex;
@@ -391,6 +395,7 @@ User& Slave::findDispatchUser(std::vector<User>& userVector, std::vector<std::ve
 
 bool Slave::isAllJobFinisd(int userIndex, std::vector<User>& userVector, std::vector<std::vector<Job>>& jobVector){
     int i = 0;
+    int temFin = 0;
     for (auto it = jobVector[userIndex].begin(); it != jobVector[userIndex].end(); ++it){
         if(i==userVector[userIndex].totalJob){
             break;
@@ -428,8 +433,8 @@ void Slave::dispatchJob(User* user, Job* job){
     }
     else if(job->farm=="B"){
         slaveStateA[getIndex()] = 1;
-        farmCreditA[1] = farmCreditA[1] + 1;
-        farmCreditB[0] = farmCreditB[0] - 1;
+        farmCreditA[1] = farmCreditA[1] - 1;
+        farmCreditB[0] = farmCreditB[0] + 1;
         /*EV<<"farmCreditA[1]"<<farmCreditA[1]<<"\n";
         EV<<"farmCreditB[0]"<<farmCreditB[0]<<"\n";*/
     }
@@ -439,7 +444,8 @@ void Slave::dispatchJob(User* user, Job* job){
     userName = job->user->name;
     //EV<<"Slave start rendering: "<<simTime()<<"\n";
     renderColor = true;
-    simtime_t renderTime = 10.0;
+    //simtime_t renderTime = 10.0;
+    simtime_t renderTime = job->renderTime;
     //simtime_t renderTime = round(par("delayTime"));
     Dispatch *msg = new Dispatch("frameSucceed");
     msg->setKind(WorkerState::FRAME_SUCCEEDED);
