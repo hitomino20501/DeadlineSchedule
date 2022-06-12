@@ -18,20 +18,17 @@ network Farm{
 	    database:Database{
     		@display("p=325,50");
 		}
-	    slave[100]:Slave{
+	    slave[5]:Slave{
     		@display("p=100,150,m,10,50,50");
 		}
 	    workstation:Workstation{
     		@display("p=200,50");
 		}
-		draw:Draw{
-			@display("p=750,50");
-		}
 	connections:
-	    for i=0..99{
+	    for i=0..4{
 	    	database.out[i] --> {  delay = 100ms; } --> slave[i].in;
 	    	database.in[i] <-- {  delay = 100ms; } <-- slave[i].out;
 	    }
-	    database.out[100] --> {  delay = 100ms; } --> workstation.in;
-	    database.in[100] <-- {  delay = 100ms; } <-- workstation.out;
+	    database.out[5] --> {  delay = 100ms; } --> workstation.in;
+	    database.in[5] <-- {  delay = 100ms; } <-- workstation.out;
 }

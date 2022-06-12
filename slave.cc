@@ -10,7 +10,7 @@
 #include "user.h"
 #include "job.h"
 #define totalUser 4
-#define eachUserJob 10
+#define eachUserJob 1
 
 using namespace omnetpp;
 
@@ -22,7 +22,7 @@ class Slave : public cSimpleModule{
         std::string userName;
         int limitSearchUser = 0;
         double denominator = 0.0;
-        double totalSlave = 100.0;
+        double totalSlave = 5.0;
 
         std::vector<User>& userVector = GenerateJob::getInstance().getAllUser();
         std::vector<std::vector<Job>>& jobVector = GenerateJob::getInstance().getAllJob();
@@ -152,46 +152,9 @@ void Slave::handleMessage(cMessage *msg){
 User& Slave::findDispatchUser(){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        /*if(index==limitSearchUser){
-            break;
-        }*/
-        if(!isAllJobFinisd((*it).userIndex)){
-            proportionVector.push_back(*it);
-        }
-        index++;
+        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
+        //EV<<"userWeight: "<<(*it).userWeight<<"\n";
     }
-    denominator = 0;
-    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
-        if((*it).finishJob != (*it).totalJob){
-            denominator = denominator + (*it).proportion;
-        }
-    }
-    //EV<<"denominator: "<<denominator<<"\n";
-    double tempWeight = 0.0;
-    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
-        //EV<<(*it).name<<":proportion: "<<(*it).proportion<<"\n";
-        //EV<<(*it).name<<":cal: "<<(*it).proportion/denominator<<"\n";
-        tempWeight = totalSlave * ((*it).proportion/denominator);
-        //EV<<(*it).name<<":tempWeight: "<<tempWeight<<"\n";
-        if((*it).limitUserWeight == -1){
-            (*it).limitUserWeight = (int)round(tempWeight);
-            //(*it).userWeight = (int)round(tempWeight);
-            (*it).priority = (int)round(tempWeight);
-            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
-        }
-        else{
-            //(*it).userWeight = (*it).userWeight + ((int)round(tempWeight)-(*it).limitUserWeight);
-            (*it).priority = (*it).priority + ((int)round(tempWeight)-(*it).limitUserWeight);
-            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
-            (*it).limitUserWeight = (int)round(tempWeight);
-        }
-        //EV<<(*it).name<<": "<<(*it).userWeight<<"\n";
-    }
-    for (auto it = proportionVector.begin(); it != proportionVector.end(); ++it){
-        userVector[(*it).userIndex] = (*it);
-    }
-    proportionVector.clear();
-
     index = 0;
     int max = -1000;
     int maxIndex = 0;
@@ -281,7 +244,7 @@ void Slave::dispatchJob(User* user, Job* job){
     userName = job->user->name;
     //EV<<"Slave start rendering: "<<simTime()<<"\n";
     renderColor = true;
-    simtime_t renderTime = 10.0;
+    simtime_t renderTime = 5.0;
     //simtime_t renderTime = round(par("delayTime"));
     Dispatch *msg = new Dispatch("frameSucceed");
     msg->setKind(WorkerState::FRAME_SUCCEEDED);

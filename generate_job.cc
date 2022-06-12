@@ -7,7 +7,7 @@
 #include "job.h"
 #include "task.h"
 #define totalUser 4
-#define eachUserJob 10
+#define eachUserJob 1
 
 using namespace omnetpp;
 
@@ -66,7 +66,7 @@ GenerateJob::GenerateJob(){
     }*/
 
     // πÍ≈Á¿Ùπ“2 17slave 4user 3eachUserJob 25task
-    int pr[totalUser]={20, 15, 11, 10};
+    int pr[totalUser]={60, 20, 10, 10};
     int pro[totalUser]={6, 2, 1, 1};
     int userIndex = 0;
     for(int i=0;i<totalUser;i++){
