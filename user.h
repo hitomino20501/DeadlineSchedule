@@ -15,7 +15,7 @@ struct User{
     int userErrorFrame = 0;
     int userFinishFrame = 0;
     int userRenderingFrame = 0;
-    int userWeight = 0;
+    double userWeight = 0;
     int finishJob = 0;
     int totalJob = 0;
     int renderingJob = 0;
@@ -23,6 +23,8 @@ struct User{
     int proportion = 0;
     int limitUserWeight = -1;
     std::string userColor;
+    omnetpp::simtime_t workerTime = 0;
+    omnetpp::simtime_t submitTime = 0;
 };
 
 #endif /* USER_H_ */

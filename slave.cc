@@ -32,7 +32,7 @@ class Slave : public cSimpleModule{
 
         int PW = 1;
         int EW = 0;
-        int SW = 0;
+        double SW = 0.5;
         int RB = 0;
         int RW = -1;
 
@@ -81,7 +81,8 @@ void Slave::handleMessage(cMessage *msg){
             // 更新user
             user->userRenderingFrame = user->userRenderingFrame - 1;
             user->userFinishFrame = user->userFinishFrame + 1;
-            user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
+            user->workerTime = simTime();
+            //user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
             //user->userWeight = user->userWeight - 1;
 
             // 更新job
@@ -152,7 +153,9 @@ void Slave::handleMessage(cMessage *msg){
 User& Slave::findDispatchUser(){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
+        double sub = simTime().dbl()-std::max((*it).submitTime.dbl(), (*it).workerTime.dbl());
+        //EV<<"userWeightSub: "<<sub<<"\n";
+        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(sub * SW)+(((*it).userRenderingFrame - RB) * RW);
         //EV<<"userWeight: "<<(*it).userWeight<<"\n";
     }
     index = 0;
@@ -233,8 +236,9 @@ void Slave::dispatchJob(User* user, Job* job){
             sendDirect(drawNode, node, "in", 0);
         }*/
     }
+    //user->workerTime = simTime();
     user->userRenderingFrame = user->userRenderingFrame+1;
-    user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
+    //user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
 
     // 更新job狀態
     job->renderingFrame = job->renderingFrame + 1;
@@ -244,7 +248,7 @@ void Slave::dispatchJob(User* user, Job* job){
     userName = job->user->name;
     //EV<<"Slave start rendering: "<<simTime()<<"\n";
     renderColor = true;
-    simtime_t renderTime = 5.0;
+    simtime_t renderTime = 20.0;
     //simtime_t renderTime = round(par("delayTime"));
     Dispatch *msg = new Dispatch("frameSucceed");
     msg->setKind(WorkerState::FRAME_SUCCEEDED);

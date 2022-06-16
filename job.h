@@ -24,6 +24,7 @@ struct Job{
     std::string jobColor;
     omnetpp::simtime_t startTime = 0;
     omnetpp::simtime_t finisdTime = 0;
+    omnetpp::simtime_t WorkerTime = 0;
 };
 
 #endif /* JOB_H_ */

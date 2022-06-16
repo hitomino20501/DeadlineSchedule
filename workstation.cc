@@ -55,6 +55,7 @@ void Workstation::handleMessage(cMessage *msg){
             if(countUser<totalUser*eachUserJob){
                 user = &userVector[countUser%totalUser];
                 user->totalJob = user->totalJob + 1;
+                user->submitTime = simTime();
             }
             countUser++;
         }
