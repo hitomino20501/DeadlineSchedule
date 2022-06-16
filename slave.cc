@@ -244,7 +244,7 @@ void Slave::dispatchJob(User* user, Job* job){
     userName = job->user->name;
     //EV<<"Slave start rendering: "<<simTime()<<"\n";
     renderColor = true;
-    simtime_t renderTime = 5.0;
+    simtime_t renderTime = 20.0;
     //simtime_t renderTime = round(par("delayTime"));
     Dispatch *msg = new Dispatch("frameSucceed");
     msg->setKind(WorkerState::FRAME_SUCCEEDED);
