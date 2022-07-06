@@ -32,8 +32,8 @@ class Slave : public cSimpleModule{
 
         int PW = 1;
         int EW = 0;
-        double SW = 0.5;
-        double REW = -0.5;
+        double SW = 0.75;
+        double REW = -1.0;
         int RB = 0;
         int RW = -1;
 
@@ -155,8 +155,8 @@ void Slave::handleMessage(cMessage *msg){
 User& Slave::findDispatchUser(){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        //int remainTask = (*it).totalTask - (*it).userFinishFrame - (*it).userRenderingFrame;
-        int remainTask = 0;
+        int remainTask = (*it).totalTask - (*it).userFinishFrame - (*it).userRenderingFrame;
+        //int remainTask = 0;
         //EV<<"remainTask: "<<remainTask<<"\n";
         double sub = simTime().dbl()-std::max((*it).submitTime.dbl(), (*it).workerTime.dbl());
         //EV<<"userWeightSub: "<<sub<<"\n";

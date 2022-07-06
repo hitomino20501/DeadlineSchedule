@@ -90,9 +90,9 @@ GenerateJob::GenerateJob(){
     for(int i=0;i<totalUser;i++){
         EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
         for(int j=0;j<eachUserJob;j++){
-            /*if(i==2 || i==3){
+            if(i==2 || i==3){
                 job.totalFrame = 10;
-            }*/
+            }
             job.taskVector.reserve(job.totalFrame);
             userVector[i].totalTask = userVector[i].totalTask + job.totalFrame;
             job.user = &userVector[i];
