@@ -33,6 +33,7 @@ class Slave : public cSimpleModule{
         int PW = 1;
         int EW = 0;
         double SW = 0.5;
+        double REW = -0.5;
         int RB = 0;
         int RW = -1;
 
@@ -82,6 +83,7 @@ void Slave::handleMessage(cMessage *msg){
             user->userRenderingFrame = user->userRenderingFrame - 1;
             user->userFinishFrame = user->userFinishFrame + 1;
             user->workerTime = simTime();
+            // user->remainTask = user->remainTask - 1;
             //user->userWeight = (user->priority * PW)+(user->userErrorFrame * EW)+(0 * SW)+((user->userRenderingFrame - RB) * RW);
             //user->userWeight = user->userWeight - 1;
 
@@ -153,13 +155,16 @@ void Slave::handleMessage(cMessage *msg){
 User& Slave::findDispatchUser(){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
+        //int remainTask = (*it).totalTask - (*it).userFinishFrame - (*it).userRenderingFrame;
+        int remainTask = 0;
+        //EV<<"remainTask: "<<remainTask<<"\n";
         double sub = simTime().dbl()-std::max((*it).submitTime.dbl(), (*it).workerTime.dbl());
         //EV<<"userWeightSub: "<<sub<<"\n";
-        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(sub * SW)+(((*it).userRenderingFrame - RB) * RW);
+        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(sub * SW)+(remainTask * REW)+(((*it).userRenderingFrame - RB) * RW);
         //EV<<"userWeight: "<<(*it).userWeight<<"\n";
     }
     index = 0;
-    int max = -1000;
+    double max = -1000.0;
     int maxIndex = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
         /*if(index==limitSearchUser){

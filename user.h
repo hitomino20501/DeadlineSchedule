@@ -22,6 +22,8 @@ struct User{
     int denominator = 0;
     int proportion = 0;
     int limitUserWeight = -1;
+    int remainTask = 0;
+    int totalTask = 0;
     std::string userColor;
     omnetpp::simtime_t workerTime = 0;
     omnetpp::simtime_t submitTime = 0;
