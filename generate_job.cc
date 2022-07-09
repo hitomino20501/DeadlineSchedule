@@ -90,6 +90,9 @@ GenerateJob::GenerateJob(){
     for(int i=0;i<totalUser;i++){
         EV<<userVector[i].name<<":"<<userVector[i].priority<<"\n";
         for(int j=0;j<eachUserJob;j++){
+            if(i==1){
+                job.totalFrame = 50;
+            }
             if(i==2 || i==3){
                 job.totalFrame = 10;
             }
