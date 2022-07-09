@@ -15,13 +15,14 @@ struct User{
     int userErrorFrame = 0;
     int userFinishFrame = 0;
     int userRenderingFrame = 0;
-    int userWeight = 0;
+    double userWeight = 0;
     int finishJob = 0;
     int totalJob = 0;
     int renderingJob = 0;
     int denominator = 0;
     int proportion = 0;
     int limitUserWeight = -1;
+    int totalTask = 0;
     std::string userColor;
 };
 

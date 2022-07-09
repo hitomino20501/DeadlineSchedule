@@ -35,6 +35,7 @@ class Slave : public cSimpleModule{
         int SW = 0;
         int RB = 0;
         int RW = -1;
+        double REW = -1.0;
 
         bool isOverTotalFrame(Job *job);
         bool isAllJobFinisd(int userIndex);
@@ -152,11 +153,14 @@ void Slave::handleMessage(cMessage *msg){
 User& Slave::findDispatchUser(){
     int index = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
-        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(((*it).userRenderingFrame - RB) * RW);
+        int remainTask = (*it).totalTask - (*it).userFinishFrame - (*it).userRenderingFrame;
+        //int remainTask = 0;
+        //EV<<"remainTask: "<<remainTask<<"\n";
+        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(0 * SW)+(remainTask * REW)+(((*it).userRenderingFrame - RB) * RW);
         //EV<<"userWeight: "<<(*it).userWeight<<"\n";
     }
     index = 0;
-    int max = -1000;
+    double max = -1000.0;
     int maxIndex = 0;
     for (auto it = userVector.begin(); it != userVector.end(); ++it){
         /*if(index==limitSearchUser){
