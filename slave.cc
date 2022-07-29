@@ -33,7 +33,8 @@ class Slave : public cSimpleModule{
         int PW = 1;
         int EW = 0;
         double SW = 0.75;
-        double REW = -1.0;
+        double REW = 0.75;
+        double DW = 1.0;
         int RB = 0;
         int RW = -1;
 
@@ -158,9 +159,22 @@ User& Slave::findDispatchUser(){
         int remainTask = (*it).totalTask - (*it).userFinishFrame - (*it).userRenderingFrame;
         //int remainTask = 0;
         //EV<<"remainTask: "<<remainTask<<"\n";
-        double sub = simTime().dbl()-std::max((*it).submitTime.dbl(), (*it).workerTime.dbl());
+        //double sub = simTime().dbl()-std::max((*it).submitTime.dbl(), (*it).workerTime.dbl());
         //EV<<"userWeightSub: "<<sub<<"\n";
-        (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(sub * SW)+(remainTask * REW)+(((*it).userRenderingFrame - RB) * RW);
+        //(*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(sub * SW)+(remainTask * REW)+(((*it).userRenderingFrame - RB) * RW);
+
+        //EV<<"AAA: "<<remainTask/totalSlave*10<<"\n";
+        //EV<<"BBB: "<<(remainTask/totalSlave*10)+simTime().dbl()<<"\n";
+        //EV<<"deadLine: "<<(*it).deadLine.dbl()<<"\n";
+        //if(((remainTask/totalSlave*10)+simTime().dbl())*DW < (*it).deadLine.dbl()){
+        if(((remainTask*10)+simTime().dbl())*DW < (*it).deadLine.dbl()){
+            //EV<<"no deadline\n";
+            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+((100-remainTask)*REW);
+        }
+        else{
+            //EV<<"deadline\n";
+            (*it).userWeight = ((*it).priority * PW)+((*it).userErrorFrame * EW)+(100*REW);
+        }
         //EV<<"userWeight: "<<(*it).userWeight<<"\n";
     }
     index = 0;

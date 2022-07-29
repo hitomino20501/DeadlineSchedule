@@ -73,6 +73,16 @@ GenerateJob::GenerateJob(){
         user.name = "User"+std::to_string(i);
         user.priority = pr[i];
         user.proportion = pro[i];
+        user.deadLine = 600;
+        if(i==1){
+            user.deadLine = 300;
+        }
+        if(i==2){
+            user.deadLine = 20;
+        }
+        if(i==3){
+            user.deadLine = 20;
+        }
         user.userIndex = userIndex;
         user.userWeight = (user.priority * PW)+(user.userErrorFrame * EW)+(0 * SW)+((user.userRenderingFrame - RB) * RW);
         user.userColor = colorQueue.front();

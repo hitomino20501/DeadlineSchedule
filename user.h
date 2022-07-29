@@ -27,6 +27,7 @@ struct User{
     std::string userColor;
     omnetpp::simtime_t workerTime = 0;
     omnetpp::simtime_t submitTime = 0;
+    omnetpp::simtime_t deadLine = 0;
 };
 
 #endif /* USER_H_ */
